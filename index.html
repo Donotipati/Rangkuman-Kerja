@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Rangkuman Kerja — Bahan Musyawarah</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1B2838">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+  :root{
+    --cover:#1B2838;
+    --cover-dark:#131D29;
+    --paper:#F5F3ED;
+    --paper-line:#DEDACE;
+    --ink:#262420;
+    --ink-soft:#6B6862;
+    --accent:#2C6E8F;
+    --accent-light:#4A93B8;
+    --accent-bg:#DEEBF0;
+    --warn:#C97B3D;
+    --warn-bg:#F5E6D8;
+    --success:#3F8F5F;
+    --success-bg:#E3F0E7;
+    --danger:#B14A3E;
+    --danger-bg:#F3E1DD;
+    --purple:#7A4B94;
+    --purple-bg:#EDE3F2;
+    --radius:14px;
+    font-size:16px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--cover);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    min-height:100vh;display:flex;justify-content:center;
+  }
+  button,input,textarea,select{font-family:inherit;}
+  .mono{font-family:"Courier New",ui-monospace,monospace;}
+
+  .app{width:100%;max-width:480px;min-height:100vh;background:var(--cover);position:relative;padding-bottom:calc(72px + env(safe-area-inset-bottom,0px));}
+
+  /* ---------- Header ---------- */
+  .cover{padding:calc(22px + env(safe-area-inset-top,0px)) 20px 16px;color:var(--paper);position:relative;}
+  .cover-top{display:flex;justify-content:space-between;align-items:flex-start;}
+  .cover-eyebrow{font-family:"Courier New",ui-monospace,monospace;letter-spacing:.2em;font-size:10.5px;color:var(--accent-light);text-transform:uppercase;margin:0 0 5px;}
+  .cover-title{font-size:22px;margin:0;font-weight:700;}
+  .cover-sub{font-size:12px;color:#A9B4BF;margin:3px 0 0;}
+  .icon-btn{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.16);color:var(--paper);width:34px;height:34px;border-radius:9px;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .topbar-tools{display:flex;gap:7px;}
+
+  .geo-divider{height:10px;width:100%;background-image:linear-gradient(45deg, var(--accent-light) 25%, transparent 25%, transparent 75%, var(--accent-light) 75%),linear-gradient(45deg, var(--accent-light) 25%, transparent 25%, transparent 75%, var(--accent-light) 75%);background-size:12px 12px;background-position:0 0, 6px 6px;opacity:0.4;}
+
+  /* ---------- Paper body ---------- */
+  .paper{background:var(--paper);border-radius:20px 20px 0 0;margin-top:8px;min-height:calc(100vh - 190px);padding:18px 16px 16px;}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  .section-title{font-family:"Courier New",ui-monospace,monospace;font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-soft);display:flex;align-items:center;gap:8px;margin:20px 0 10px;}
+  .section-title::after{content:"";flex:1;height:1px;background:var(--paper-line);}
+  .section-title.first{margin-top:0;}
+
+  .info-card{background:#fff;border:1px solid var(--paper-line);border-radius:var(--radius);padding:14px 15px;margin-bottom:12px;}
+  .info-card h3{margin:0 0 4px;font-size:14.5px;}
+  .info-card p{margin:2px 0;font-size:12.5px;color:var(--ink-soft);line-height:1.5;}
+
+  .empty-note{font-size:12.5px;color:var(--ink-soft);font-style:italic;padding:10px 2px;text-align:center;}
+
+  .btn-row{display:flex;gap:10px;margin-top:6px;}
+  .btn{flex:1;padding:13px;border-radius:10px;border:none;font-size:14px;font-weight:700;cursor:pointer;}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-ghost{background:#fff;color:var(--ink);border:1px solid var(--paper-line);}
+  .btn-danger{background:var(--danger-bg);color:var(--danger);}
+  .btn-teal{background:var(--success);color:#fff;}
+  .btn-block{width:100%;margin-bottom:10px;}
+  .btn:disabled{opacity:0.45;cursor:not-allowed;}
+
+  .btn-small{padding:8px 14px;border-radius:8px;border:1px solid var(--paper-line);background:#fff;font-size:12px;font-weight:700;color:var(--ink);cursor:pointer;white-space:nowrap;}
+  .btn-small.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+  /* ---------- Month/period widget ---------- */
+  .period-widget{
+    margin-top:14px;background:rgba(255,255,255,0.06);border:1px solid rgba(74,147,184,0.35);
+    border-radius:16px;padding:13px 16px;text-align:center;
+  }
+  .period-widget .plabel{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-light);font-family:"Courier New",monospace;margin:0 0 4px;}
+  .period-widget .pval{font-size:17px;font-weight:700;color:var(--paper);margin:0;}
+  .period-widget .psub{font-size:11px;color:#A9B4BF;margin-top:2px;}
+
+  /* ---------- Upload rows ---------- */
+  .file-row{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid var(--paper-line);border-radius:var(--radius);padding:11px 13px;margin-bottom:9px;}
+  .file-row .ftype{width:34px;height:34px;border-radius:9px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:15px;flex:0 0 auto;}
+  .file-row .ftype.docx{background:var(--purple-bg);color:var(--purple);}
+  .file-row .fmid{flex:1;min-width:0;}
+  .file-row .fname{font-size:12px;color:var(--ink-soft);margin:0 0 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .file-row input[type=text]{width:100%;padding:8px 10px;border:1px solid var(--paper-line);border-radius:8px;font-size:13.5px;font-weight:600;background:var(--paper);}
+  .file-row .fstatus{font-size:10.5px;margin-top:6px;display:flex;align-items:center;gap:5px;}
+  .file-row .fstatus.ok{color:var(--success);}
+  .file-row .fstatus.warn{color:var(--warn);}
+  .file-row .fstatus.fail{color:var(--danger);}
+  .file-row .fstatus.pending{color:var(--ink-soft);}
+  .file-row .fdel{background:none;border:none;color:var(--ink-soft);font-size:17px;cursor:pointer;padding:2px 4px;flex:0 0 auto;}
+
+  .upload-drop{border:2px dashed var(--paper-line);border-radius:var(--radius);padding:22px 14px;text-align:center;cursor:pointer;background:#fff;margin-bottom:14px;}
+  .upload-drop .ic{font-size:26px;margin-bottom:6px;}
+  .upload-drop .t1{font-size:13.5px;font-weight:700;color:var(--ink);}
+  .upload-drop .t2{font-size:11px;color:var(--ink-soft);margin-top:3px;}
+
+  /* ---------- Month picker options ---------- */
+  .month-pick-row{display:flex;justify-content:space-between;align-items:center;padding:12px 13px;border:1px solid var(--paper-line);border-radius:var(--radius);background:#fff;margin-bottom:8px;cursor:pointer;}
+  .month-pick-row.selected{border-color:var(--accent);border-width:2px;background:var(--accent-bg);}
+  .month-pick-row .mlabel{font-size:14px;font-weight:700;}
+  .month-pick-row .mcount{font-size:11px;color:var(--ink-soft);font-family:"Courier New",monospace;}
+  .month-pick-row.selected .mcount{color:var(--accent);}
+
+  /* ---------- Instansi accordion ---------- */
+  .instansi-card{background:#fff;border:1px solid var(--paper-line);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;}
+  .instansi-head{display:flex;justify-content:space-between;align-items:center;padding:13px 15px;cursor:pointer;background:var(--cover);color:var(--paper);}
+  .instansi-head .iname{font-size:14.5px;font-weight:700;}
+  .instansi-head .icount{font-size:10.5px;color:var(--accent-light);font-family:"Courier New",monospace;margin-top:2px;}
+  .instansi-head .chev{font-size:13px;color:var(--paper);transition:transform .2s;}
+  .instansi-head.collapsed .chev{transform:rotate(-90deg);}
+  .instansi-body{padding:14px 15px 6px;}
+  .instansi-body.collapsed{display:none;}
+  .instansi-warn{background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:8px 10px;font-size:11.5px;margin-bottom:12px;line-height:1.5;}
+
+  .kat-block{margin-bottom:16px;}
+  .kat-title{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--ink);margin-bottom:8px;}
+  .kat-title .dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto;}
+  .kat-title .dot.capaian{background:var(--accent);}
+  .kat-title .dot.hasil{background:var(--success);}
+  .kat-title .dot.kendala{background:var(--warn);}
+  .kat-title .dot.bahas{background:var(--danger);}
+  .kat-title .dot.rekom{background:var(--purple);}
+  .kat-item{padding:10px 0 12px 15px;border-left:2px solid var(--paper-line);margin-bottom:10px;}
+  .kat-item .kjudul{font-size:13.5px;font-weight:700;margin:0 0 5px;}
+  .kat-item .kjudul .ktanggal{font-size:11px;font-weight:400;color:var(--ink-soft);}
+  .kat-item .ktext{font-size:12.5px;color:var(--ink-soft);line-height:1.6;margin:0 0 3px;}
+  .kat-item .ktext b{color:var(--ink);}
+  .kat-item .ktext.tone-warn{color:var(--warn);}
+  .kat-item .ktext.tone-danger{color:var(--danger);}
+  .kat-empty{font-size:11.5px;color:var(--ink-soft);font-style:italic;padding-left:15px;}
+
+  .field{margin-bottom:13px;}
+  .field label{display:block;font-family:"Courier New",ui-monospace,monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:5px;}
+  .field input,.field textarea,.field select{width:100%;padding:10px 12px;border:1px solid var(--paper-line);border-radius:10px;font-size:14.5px;background:#fff;color:var(--ink);}
+  .field textarea{resize:vertical;min-height:90px;line-height:1.5;}
+  .field input:focus,.field textarea:focus,.field select:focus{outline:2px solid var(--accent-light);outline-offset:1px;}
+  .field-hint{font-size:10.5px;color:var(--ink-soft);margin:-3px 0 6px;font-style:italic;}
+  .row2{display:flex;gap:10px;}
+  .row2 > div{flex:1;}
+
+  /* ---------- Arsip / Musyawarah cards ---------- */
+  .arsip-card{background:#fff;border:1px solid var(--paper-line);border-radius:var(--radius);padding:14px 15px;margin-bottom:10px;cursor:pointer;}
+  .arsip-card:active{background:rgba(44,110,143,0.05);}
+  .arsip-card .atop{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .arsip-card .aperiode{font-size:15px;font-weight:700;}
+  .arsip-card .adate{font-size:10.5px;color:var(--ink-soft);font-family:"Courier New",monospace;white-space:nowrap;}
+  .arsip-card .ameta{font-size:12px;color:var(--ink-soft);margin-top:5px;}
+  .arsip-card .atags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+  .tag{display:inline-block;font-size:9.5px;padding:3px 9px;border-radius:999px;font-family:"Courier New",monospace;letter-spacing:.02em;white-space:nowrap;background:var(--accent-bg);color:var(--accent);}
+  .tag.putusan{background:var(--purple-bg);color:var(--purple);}
+
+  .setting-group{margin-bottom:20px;}
+  .setting-group h3{font-size:13px;margin:0 0 8px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;font-family:"Courier New",monospace;}
+  .setting-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--paper-line);}
+  .setting-row > div:first-child{flex:1;min-width:0;}
+  .setting-row .lbl{font-size:13.5px;}
+  .setting-row .desc{font-size:11px;color:var(--ink-soft);margin-top:2px;}
+  .setting-row input{width:82px;padding:7px 9px;border:1px solid var(--paper-line);border-radius:8px;font-size:13px;text-align:center;}
+
+  /* ---------- FAB & bottom nav ---------- */
+  .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--cover-dark);display:flex;z-index:25;border-top:1px solid rgba(255,255,255,0.08);padding-bottom:env(safe-area-inset-bottom,0px);}
+  .bottom-nav button{flex:1;background:none;border:none;color:#8A95A0;padding:10px 4px 8px;font-size:9.5px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;font-family:inherit;}
+  .bottom-nav button .ic{font-size:16px;}
+  .bottom-nav button.active{color:var(--accent-light);}
+
+  /* ---------- Sheets ---------- */
+  .sheet-backdrop{position:fixed;inset:0;background:rgba(19,29,41,0.6);display:none;z-index:40;align-items:flex-end;justify-content:center;}
+  .sheet-backdrop.open{display:flex;}
+  #confirmBackdrop{z-index:60;}
+  .sheet{background:var(--paper);width:100%;max-width:480px;border-radius:20px 20px 0 0;padding:16px 20px calc(26px + env(safe-area-inset-bottom,0px));max-height:88vh;overflow-y:auto;animation:slideup .2s ease-out;}
+  @keyframes slideup{from{transform:translateY(24px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+  .sheet-handle{width:36px;height:4px;background:var(--paper-line);border-radius:3px;margin:0 auto 14px;}
+  .sheet h2{font-size:17px;margin:0 0 4px;}
+  .sheet .sub{font-size:11.5px;color:var(--ink-soft);margin:0 0 14px;line-height:1.5;}
+
+  .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--cover-dark);color:var(--paper);padding:10px 18px;border-radius:10px;font-size:12.5px;z-index:60;opacity:0;pointer-events:none;transition:opacity .25s;max-width:82%;text-align:center;}
+  .toast.show{opacity:1;}
+
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(0,0,0,0.15);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* ---------- Layout Desktop/Laptop (layar lebar) ---------- */
+  @media (min-width:860px){
+    body{align-items:flex-start;}
+    .app{max-width:900px;box-shadow:0 0 40px rgba(0,0,0,0.25);}
+    .bottom-nav{max-width:900px;}
+    .bottom-nav button{font-size:12px;padding:12px 4px 10px;flex-direction:row;gap:7px;}
+    .bottom-nav button .ic{font-size:18px;}
+    .sheet-backdrop{align-items:center;padding:24px;}
+    .sheet{border-radius:20px;max-width:640px;max-height:88vh;}
+    .cover{padding:26px 32px 18px;}
+    .paper{padding:22px 32px 16px;}
+    .period-widget{max-width:420px;margin-left:auto;margin-right:auto;}
+    .icon-btn:hover,.btn-small:hover,.nav-btn:hover,.arsip-card:hover,.month-pick-row:hover{opacity:0.9;cursor:pointer;}
+  }
+  @media (min-width:1200px){
+    .app{max-width:1080px;}
+    .bottom-nav{max-width:1080px;}
+    .sheet{max-width:720px;}
+  }
+
+  /* ---------- Desktop sidebar (layar lebar, PC) ---------- */
+  @media (min-width:1100px){
+    body{padding-left:236px;justify-content:center;}
+    .app{padding-bottom:24px;box-shadow:none;}
+    .bottom-nav{
+      position:fixed;left:0;top:0;bottom:0;right:auto;transform:none;
+      width:236px;max-width:236px;height:100vh;
+      flex-direction:column;align-items:stretch;justify-content:flex-start;
+      padding:28px 0 20px;gap:2px;
+      border-top:none;border-right:1px solid rgba(255,255,255,0.08);
+    }
+    .bottom-nav button{
+      flex:none;flex-direction:row;justify-content:flex-start;
+      gap:13px;padding:13px 14px 13px 28px;font-size:14.5px;
+      border-radius:0;text-align:left;
+    }
+    .bottom-nav button.active{background:rgba(255,255,255,0.07);box-shadow:inset 3px 0 0 var(--accent-light);}
+    .bottom-nav button .ic{font-size:19px;width:22px;text-align:center;flex:none;}
+    .bottom-nav::before{
+      content:"Rangkuman Kerja";display:block;
+      padding:0 28px 22px;margin-bottom:8px;
+      font-size:15px;font-weight:700;letter-spacing:0.5px;
+      color:var(--paper);border-bottom:1px solid rgba(255,255,255,0.08);
+    }
+  }
+
+  /* ---------- Panel info kanan (layar sangat lebar) ---------- */
+  .side-info-panel{display:none;}
+  @media (min-width:1400px){
+    body{background:linear-gradient(180deg,#0f1720 0%,#1a2632 100%);padding-right:264px;}
+    .app{max-width:1360px;}
+    .cover{padding:32px 44px 22px;}
+    .paper{padding:26px 44px 16px;}
+    .side-info-panel{
+      display:flex;flex-direction:column;gap:14px;
+      position:fixed;right:0;top:0;bottom:0;width:264px;
+      padding:28px 22px 20px;background:var(--cover-dark);
+      border-left:1px solid rgba(255,255,255,0.08);overflow-y:auto;
+    }
+    .side-info-panel h4{margin:14px 0 2px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-light);font-family:"Courier New",monospace;}
+    .side-info-panel h4:first-child{margin-top:0;}
+    .side-stat{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);border-radius:12px;padding:12px 14px;}
+    .side-stat .slbl{font-size:10px;color:#8A95A0;text-transform:uppercase;letter-spacing:.05em;margin:0 0 4px;font-family:"Courier New",monospace;}
+    .side-stat .sval{font-size:18px;font-weight:700;color:var(--paper);margin:0;}
+    .side-tip{background:rgba(74,147,184,0.14);border:1px solid rgba(74,147,184,0.32);border-radius:12px;padding:12px 14px;font-size:11.5px;line-height:1.6;color:#C7D3DC;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="cover">
+    <div class="cover-top">
+      <div>
+        <p class="cover-eyebrow">Rangkuman Kerja</p>
+        <h1 class="cover-title">Bahan Musyawarah</h1>
+        <p class="cover-sub">Dari laporan instansi — tersimpan di perangkat ini</p>
+      </div>
+      <div class="topbar-tools">
+        <button class="icon-btn" id="btnAtur" title="Pengaturan">⚙</button>
+      </div>
+    </div>
+    <div class="period-widget" id="periodWidget" style="display:none;">
+      <p class="plabel">Bulan Rangkuman Aktif</p>
+      <p class="pval" id="periodVal">—</p>
+      <p class="psub" id="periodSub"></p>
+    </div>
+  </div>
+  <div class="geo-divider"></div>
+
+  <div class="paper">
+
+    <!-- ============ TAB: UPLOAD ============ -->
+    <div class="tab-panel active" id="tab-upload">
+      <div class="section-title first">Unggah Laporan</div>
+      <div class="info-card">
+        <p>Unggah file backup (.json) dari Aplikasi 1, atau file Word (.docx) laporan instansi. Bisa beberapa file sekaligus, satu file = satu instansi.</p>
+      </div>
+
+      <div class="upload-drop" id="btnAddFiles">
+        <div class="ic">📤</div>
+        <div class="t1">Tambah File Laporan</div>
+        <div class="t2">.json (backup) atau .docx (Word) — bisa pilih banyak sekaligus</div>
+      </div>
+      <input type="file" id="fileInput" accept=".json,.docx" multiple style="display:none;">
+
+      <div id="fileRowsWrap"></div>
+      <div class="empty-note" id="fileEmptyNote">Belum ada file diunggah.</div>
+
+      <div id="processAreaWrap" style="display:none;">
+        <button class="btn btn-primary btn-block" id="btnProcessFiles">Proses Semua File</button>
+      </div>
+
+      <div id="monthPickWrap" style="display:none;">
+        <div class="section-title">Pilih Bulan Hijriah untuk Dirangkum</div>
+        <div id="monthPickList"></div>
+        <div id="manualMonthPick" style="display:none;">
+          <div class="row2">
+            <div class="field"><label>Bulan</label><select id="manualMonthSelect"></select></div>
+            <div class="field"><label>Tahun H</label><input type="number" id="manualYearInput" placeholder="1447"></div>
+          </div>
+        </div>
+        <button class="btn btn-teal btn-block" id="btnBuildDraft" style="margin-top:8px;">Buat Rangkuman</button>
+      </div>
+    </div>
+
+    <!-- ============ TAB: RANGKUMAN ============ -->
+    <div class="tab-panel" id="tab-rangkuman">
+      <div id="rangkumanEmpty" class="empty-note">Belum ada draft rangkuman. Mulai dari tab Upload.</div>
+      <div id="rangkumanWrap" style="display:none;">
+        <div class="section-title first">Rangkuman per Instansi</div>
+        <div id="instansiListWrap"></div>
+
+        <div class="section-title">Catatan Koordinator</div>
+        <div class="field">
+          <textarea id="catatanKoordinator" placeholder="Yang kurang apa, apa yang perlu ditanyakan/dibahas di musyawarah, dst. (opsional, satu catatan untuk seluruh instansi)"></textarea>
+        </div>
+
+        <button class="btn btn-teal btn-block" id="btnFinalisasi">Finalisasi Bahan Musyawarah</button>
+        <button class="btn btn-ghost btn-block" id="btnBatalkanDraft">Batalkan Draft</button>
+      </div>
+    </div>
+
+    <!-- ============ TAB: ARSIP ============ -->
+    <div class="tab-panel" id="tab-arsip">
+      <div class="section-title first">Arsip Rangkuman</div>
+      <div class="info-card">
+        <p>Riwayat rangkuman yang sudah difinalisasi tiap bulan — buat bahan monitoring, tinggal lihat lagi kapan saja.</p>
+      </div>
+      <div id="arsipListWrap"></div>
+      <div class="empty-note" id="arsipEmptyNote">Belum ada rangkuman yang difinalisasi.</div>
+    </div>
+
+    <!-- ============ TAB: MUSYAWARAH ============ -->
+    <div class="tab-panel" id="tab-musyawarah">
+      <div class="section-title first">Catat Putusan Musyawarah</div>
+      <div class="field">
+        <label>Terkait Rangkuman</label>
+        <select id="putusanRangkumanSelect"><option value="">— Umum (tidak terkait rangkuman tertentu) —</option></select>
+      </div>
+      <div class="field">
+        <label>Hasil Putusan</label>
+        <textarea id="putusanIsi" placeholder="Tulis hasil putusan/kesepakatan musyawarah di sini..." style="min-height:130px;"></textarea>
+      </div>
+      <button class="btn btn-primary btn-block" id="btnSimpanPutusan">Simpan Putusan</button>
+
+      <div class="section-title">Arsip Putusan</div>
+      <div id="putusanListWrap"></div>
+      <div class="empty-note" id="putusanEmptyNote">Belum ada putusan musyawarah tersimpan.</div>
+    </div>
+
+    <!-- ============ TAB: ATUR ============ -->
+    <div class="tab-panel" id="tab-atur">
+      <div class="section-title first">Pengaturan</div>
+      <div class="setting-group">
+        <h3>Kalender Hijriah</h3>
+        <div class="setting-row">
+          <div><div class="lbl">Koreksi Tanggal Hijriah</div><div class="desc">Dalam hari, boleh minus. Isi kalau tanggal Hijriah beda dari kalender resmi/instansi.</div></div>
+          <input type="number" id="setHijriOffset" min="-999" max="999" step="1" placeholder="0">
+        </div>
+      </div>
+      <div class="setting-group">
+        <h3>Cadangkan Data</h3>
+        <button class="btn-small primary" id="btnExportAll" style="width:100%;margin-bottom:8px;">Ekspor Semua Data Aplikasi (.json)</button>
+        <button class="btn-small" id="btnImportAll" style="width:100%;">Impor Data (.json)</button>
+        <input type="file" id="fileImportAll" accept=".json" style="display:none;">
+      </div>
+      <div class="setting-group">
+        <h3>Reset</h3>
+        <button class="btn-small" style="width:100%;color:var(--danger);border-color:var(--danger-bg);" id="btnResetAll">Hapus Semua Data</button>
+      </div>
+      <div class="info-card">
+        <p>Rangkuman Kerja. Semua data tersimpan 100% di perangkat ini, tanpa server. Membaca laporan dari Agenda Kerja (backup .json / Word .docx) dan merangkumnya jadi bahan musyawarah.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-btn active" data-tab="upload"><span class="ic">📤</span>Upload</button>
+    <button class="nav-btn" data-tab="rangkuman"><span class="ic">📋</span>Rangkuman</button>
+    <button class="nav-btn" data-tab="arsip"><span class="ic">🗄</span>Arsip</button>
+    <button class="nav-btn" data-tab="musyawarah"><span class="ic">🗳</span>Musyawarah</button>
+    <button class="nav-btn" data-tab="atur"><span class="ic">⚙</span>Atur</button>
+  </div>
+
+  <!-- ============ SHEET: Detail Arsip ============ -->
+  <div class="sheet-backdrop" id="detailArsipBackdrop">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <h2 id="detailArsipTitle">Detail Rangkuman</h2>
+      <p class="sub" id="detailArsipSub"></p>
+      <div id="detailArsipBody"></div>
+      <div class="btn-row" style="margin-top:10px;">
+        <button class="btn btn-ghost" id="btnDetailArsipTutup">Tutup</button>
+        <button class="btn btn-primary" id="btnDetailArsipExport">Export Ulang (Word)</button>
+      </div>
+      <button class="btn btn-danger btn-block" id="btnDetailArsipHapus" style="margin-top:10px;">Hapus Rangkuman Ini</button>
+    </div>
+  </div>
+
+  <!-- ============ SHEET: Detail Putusan ============ -->
+  <div class="sheet-backdrop" id="detailPutusanBackdrop">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <h2>Putusan Musyawarah</h2>
+      <p class="sub" id="detailPutusanSub"></p>
+      <div class="field">
+        <label>Hasil Putusan</label>
+        <textarea id="detailPutusanIsi" style="min-height:130px;"></textarea>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="btnDetailPutusanTutup">Tutup</button>
+        <button class="btn btn-primary" id="btnDetailPutusanSimpan">Simpan Perubahan</button>
+      </div>
+      <button class="btn btn-danger btn-block" id="btnDetailPutusanHapus" style="margin-top:10px;">Hapus Putusan Ini</button>
+    </div>
+  </div>
+
+  <!-- ============ SHEET: Konfirmasi ============ -->
+  <div class="sheet-backdrop" id="confirmBackdrop">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <h2 id="confirmTitle">Konfirmasi</h2>
+      <p class="sub" id="confirmMsg"></p>
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="btnConfirmCancel">Batal</button>
+        <button class="btn btn-danger" id="btnConfirmOk">Hapus</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<div class="side-info-panel" id="sideInfoPanel"></div>
+
+<script src="native-files.js"></script>
+<script src="mammoth.browser.min.js"></script>
+<script>
+// ================= Konstanta & util dasar =================
+var HIJRI_MONTHS = ["Muharram","Safar","Rabiul Awal","Rabiul Akhir","Jumadil Awal","Jumadil Akhir","Rajab","Sya'ban","Ramadhan","Syawal","Dzulqa'dah","Dzulhijjah"];
+var MONTHS = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+var STORAGE_KEY = "rangkumanKerjaData_v1";
+
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function escapeHtml(s){
+  return String(s==null?"":s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; });
+}
+function todayISO(){
+  var d = new Date();
+  return d.getFullYear()+"-"+(d.getMonth()+1).toString().padStart(2,"0")+"-"+d.getDate().toString().padStart(2,"0");
+}
+function toast(msg){
+  var t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  setTimeout(function(){ t.classList.remove("show"); }, 2600);
+}
+
+// ================= State =================
+var state = {
+  settings: { hijriOffset: 0 },
+  draft: null,              // { hijriYear, hijriMonth, instansiList: [...], catatanKoordinator }
+  stagingFiles: [],         // file yang lagi diunggah/diproses sebelum jadi draft
+  arsipRangkuman: [],
+  arsipMusyawarah: []
+};
+
+function load(){
+  try{
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      var data = JSON.parse(raw);
+      state.settings = Object.assign({hijriOffset:0}, data.settings||{});
+      state.arsipRangkuman = data.arsipRangkuman || [];
+      state.arsipMusyawarah = data.arsipMusyawarah || [];
+    }
+  }catch(e){}
+}
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    settings: state.settings,
+    arsipRangkuman: state.arsipRangkuman,
+    arsipMusyawarah: state.arsipMusyawarah
+  }));
+}
+
+// ================= Kalender Hijriah (identik dengan Aplikasi 1) =================
+function gregorianToJDN(year, month, day){
+  var a=Math.floor((14-month)/12), y=year+4800-a, m=month+12*a-3;
+  return day+Math.floor((153*m+2)/5)+365*y+Math.floor(y/4)-Math.floor(y/100)+Math.floor(y/400)-32045;
+}
+function jdToHijri(jd){
+  jd=Math.floor(jd); var l=jd-1948440+10632, n=Math.floor((l-1)/10631); l=l-10631*n+354;
+  var j=Math.floor((10985-l)/5316)*Math.floor((50*l)/17719)+Math.floor(l/5670)*Math.floor((43*l)/15238);
+  l=l-Math.floor((30-j)/15)*Math.floor((17719*j)/50)-Math.floor(j/16)*Math.floor((15238*j)/43)+29;
+  var month=Math.round(Math.floor((24*l)/709)), day=Math.round(l-Math.floor((709*month)/24)), year=30*n+j-30;
+  return {year:year,month:month,day:day};
+}
+function dateToHijri(d){
+  var offset=(state.settings&&Number(state.settings.hijriOffset))||0;
+  return jdToHijri(gregorianToJDN(d.getFullYear(),d.getMonth()+1,d.getDate())+offset);
+}
+function isoToDate(s){ return new Date(s+"T00:00:00"); }
+function hijriKey(hy,hm){ return "H-"+hy+"-"+hm; }
+function hijriMonthLabel(hy,hm){ return HIJRI_MONTHS[hm-1]+" "+hy+" H"; }
+
+function normalizeMonthName(s){ return String(s||"").toLowerCase().replace(/['’ʻ]/g,"").replace(/\s+/g,""); }
+var HIJRI_MONTH_LOOKUP = {};
+HIJRI_MONTHS.forEach(function(name,i){ HIJRI_MONTH_LOOKUP[normalizeMonthName(name)] = i+1; });
+
+// ================= Status/label mapping =================
+var STATUS_LABEL = {sesuai:"Terlaksana sesuai jadwal", berubah:"Terlaksana dengan perubahan jadwal", batal:"Tidak terlaksana"};
+var CAPAIAN_LABEL = {tercapai:"Tercapai", sebagian:"Tercapai sebagian", tidak:"Tidak tercapai"};
+
+// ================= Normalisasi item kegiatan (sumber: JSON backup) =================
+// Hasil normalisasi seragam terlepas dari sumbernya (json/docx):
+// { judul, hijriMonthKey, hijriDateLabel, statusPelaksanaan, capaianTarget, capaianTargetText,
+//   indikatorKeberhasilan, kendala, rencanaTindakLanjut, belumEvaluasi, isInsidentil, sourceOk }
+
+function normalizeFromJsonBackup(data){
+  var items = [];
+  (data.kegiatan||[]).forEach(function(k){
+    if(!k || !k.tanggal) return;
+    var h = dateToHijri(isoToDate(k.tanggal));
+    var ev = k.evaluasi || null;
+    items.push({
+      judul: k.jenisKegiatan || "(tanpa judul)",
+      hijriMonthKey: hijriKey(h.year,h.month),
+      hijriDateLabel: h.day+" "+HIJRI_MONTHS[h.month-1]+" "+h.year+" H",
+      statusPelaksanaan: ev ? (ev.statusPelaksanaan||null) : null,
+      capaianTarget: ev ? (ev.capaianTarget||null) : null,
+      capaianTargetText: "",
+      indikatorKeberhasilan: ev ? (ev.indikatorKeberhasilan||"") : "",
+      kendala: ev ? (ev.kendala||"") : "",
+      rencanaTindakLanjut: ev ? (ev.rencanaTindakLanjut||"") : "",
+      belumEvaluasi: !ev,
+      isInsidentil: false,
+      sourceOk: true
+    });
+  });
+  (data.insidentil||[]).forEach(function(it){
+    if(!it || !it.tanggal) return;
+    var h = dateToHijri(isoToDate(it.tanggal));
+    items.push({
+      judul: it.jenisKegiatan || "(tanpa judul)",
+      hijriMonthKey: hijriKey(h.year,h.month),
+      hijriDateLabel: h.day+" "+HIJRI_MONTHS[h.month-1]+" "+h.year+" H",
+      statusPelaksanaan: "sesuai",
+      capaianTarget: null,
+      capaianTargetText: "",
+      indikatorKeberhasilan: "",
+      kendala: "",
+      rencanaTindakLanjut: it.rencanaTindakLanjut || "",
+      belumEvaluasi: false,
+      isInsidentil: true,
+      sourceOk: true
+    });
+  });
+  return items;
+}
+
+// Nama instansi dari backup .json Aplikasi 1 diambil dari Pengaturan > Nama Instansi
+// (field yang sama yang muncul sebagai kop di laporan Word Aplikasi 1).
+function detectInstansiNameFromJson(data){
+  var n = data && data.settings && data.settings.namaInstansi;
+  return (n && String(n).trim()) ? String(n).trim() : null;
+}
+function titleCaseSimple(s){
+  return String(s).toLowerCase().replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+}
+// Laporan Word Aplikasi 1 mencetak nama instansi (huruf besar semua) sebagai kop,
+// tepat sebelum judul "Laporan Rencana Kerja — ...". Dicoba dideteksi dari situ.
+function detectInstansiNameFromDocx(rawText){
+  var lines = rawText.split(/\r?\n/).map(function(l){ return l.trim(); }).filter(function(l){ return l.length>0; });
+  var headingIdx = lines.findIndex(function(l){ return /^Laporan Rencana Kerja/i.test(l); });
+  if(headingIdx>0){
+    var candidate = lines[headingIdx-1];
+    if(candidate && candidate.length<=80 && !/:\s*$/.test(candidate)){
+      return titleCaseSimple(candidate);
+    }
+  }
+  return null;
+}
+
+// ================= Ekstraksi label:value dari teks (dipakai parser docx) =================
+// Menangani 2 pola: "Label : value" satu baris, ATAU "Label :" lalu value di baris berikutnya
+// (persis format export Word Aplikasi 1).
+function extractLabelValue(lines, fromIdx, toIdx, labelPattern){
+  for(var i=fromIdx; i<toIdx; i++){
+    var m = lines[i].match(labelPattern);
+    if(m){
+      var inline = (m[1]||"").trim();
+      if(inline && inline !== ":"){ return inline.replace(/^\.+|\.+$/g,"").trim(); }
+      // ambil baris berikutnya sebagai value, kalau bukan label lain
+      if(i+1<toIdx && lines[i+1] && !/^[A-Za-z].{0,40}:\s*$/.test(lines[i+1]) ){
+        return lines[i+1].replace(/\.$/,"").trim();
+      }
+      return "";
+    }
+  }
+  return null; // label tidak ditemukan sama sekali
+}
+
+// ================= Parser DOCX best-effort (baca ulang template Word Aplikasi 1) =================
+function parseFromDocxText(rawText){
+  var lines = rawText.split(/\r?\n/).map(function(l){ return l.trim(); }).filter(function(l){ return l.length>0; });
+  var tanggalIdx = [];
+  for(var i=0;i<lines.length;i++){
+    if(/^Tanggal\s*:/i.test(lines[i])) tanggalIdx.push(i);
+  }
+  var items = [];
+  var warnings = [];
+  if(tanggalIdx.length===0){
+    warnings.push("Tidak ditemukan pola tanggal yang bisa dibaca. Kemungkinan format dokumen sudah berubah jauh dari template.");
+    return {items:items, warnings:warnings};
+  }
+  for(var t=0; t<tanggalIdx.length; t++){
+    var start = tanggalIdx[t];
+    var end = (t+1<tanggalIdx.length) ? tanggalIdx[t+1] : lines.length;
+    var judul = (start>0) ? lines[start-1] : "(judul tidak terbaca)";
+
+    // parse tanggal Hijriah dari baris "Tanggal : 12 Ramadhan 1447 H (...)"
+    var hijriMonthKey = null, hijriDateLabel = "-";
+    var dm = lines[start].match(/(\d{1,2})\s+([A-Za-z' \u2019\u02bb]+?)\s+(\d{3,4})\s*H\b/i);
+    if(dm){
+      var mIdx = HIJRI_MONTH_LOOKUP[normalizeMonthName(dm[2])];
+      if(mIdx){
+        hijriMonthKey = hijriKey(parseInt(dm[3],10), mIdx);
+        hijriDateLabel = dm[1]+" "+HIJRI_MONTHS[mIdx-1]+" "+dm[3]+" H";
+      }
+    }
+
+    var blockText = lines.slice(start,end).join(" \n ");
+    var belumEvaluasi = /belum memiliki catatan evaluasi/i.test(blockText);
+
+    var statusPelaksanaan = null;
+    if(/tidak terlaksana/i.test(blockText)) statusPelaksanaan = "batal";
+    else if(/perubahan jadwal/i.test(blockText)) statusPelaksanaan = "berubah";
+    else if(/sesuai jadwal/i.test(blockText)) statusPelaksanaan = "sesuai";
+
+    var capaianRaw = extractLabelValue(lines, start, end, /^Capaian target kegiatan\s*:?\s*(.*)$/i);
+    var capaianTarget = null, capaianTargetText = "";
+    if(capaianRaw){
+      var cr = capaianRaw.toLowerCase();
+      if(cr.indexOf("tidak")>-1) capaianTarget = "tidak";
+      else if(cr.indexOf("sebagian")>-1) capaianTarget = "sebagian";
+      else if(cr.indexOf("tercapai")>-1) capaianTarget = "tercapai";
+      else capaianTargetText = capaianRaw;
+    }
+
+    var indikator = extractLabelValue(lines, start, end, /^Indikator keberhasilan\s*:?\s*(.*)$/i) || "";
+    var kendala = extractLabelValue(lines, start, end, /^Kendala yang dihadapi\s*:?\s*(.*)$/i) || "";
+    var rtl = extractLabelValue(lines, start, end, /^Rencana tindak lanjut\s*:?\s*(.*)$/i);
+    if(rtl===null) rtl = extractLabelValue(lines, start, end, /^Hasil\/tindak lanjut\s*:?\s*(.*)$/i);
+    if(rtl===null) rtl = "";
+
+    var isInsidentil = !belumEvaluasi && !statusPelaksanaan && !capaianRaw;
+
+    var blockWarnings = [];
+    if(!hijriMonthKey) blockWarnings.push('Tanggal kegiatan "'+judul+'" tidak terbaca lengkap — tidak ikut difilter otomatis per bulan.');
+    if(!isInsidentil && !belumEvaluasi && !statusPelaksanaan && !capaianRaw){
+      blockWarnings.push('Bagian evaluasi kegiatan "'+judul+'" tidak terbaca lengkap (pola label mungkin sudah diedit).');
+    }
+
+    items.push({
+      judul: judul,
+      hijriMonthKey: hijriMonthKey,
+      hijriDateLabel: hijriDateLabel,
+      statusPelaksanaan: statusPelaksanaan,
+      capaianTarget: capaianTarget,
+      capaianTargetText: capaianTargetText,
+      indikatorKeberhasilan: indikator,
+      kendala: kendala,
+      rencanaTindakLanjut: rtl,
+      belumEvaluasi: belumEvaluasi,
+      isInsidentil: isInsidentil,
+      sourceOk: blockWarnings.length===0
+    });
+    warnings = warnings.concat(blockWarnings);
+  }
+  return {items:items, warnings:warnings};
+}
+
+// ================= Tab switching =================
+var tabs = ["upload","rangkuman","arsip","musyawarah","atur"];
+function showTab(name){
+  tabs.forEach(function(t){
+    document.getElementById("tab-"+t).classList.toggle("active", t===name);
+  });
+  document.querySelectorAll(".nav-btn").forEach(function(b){
+    b.classList.toggle("active", b.dataset.tab===name);
+  });
+  if(name==="musyawarah") renderPutusanSelect();
+  if(name==="arsip") renderArsipList();
+  if(name==="musyawarah") renderPutusanList();
+  updatePeriodWidget();
+}
+document.querySelectorAll(".nav-btn").forEach(function(b){
+  b.addEventListener("click", function(){ showTab(b.dataset.tab); });
+});
+document.getElementById("btnAtur").addEventListener("click", function(){ showTab("atur"); });
+
+function updatePeriodWidget(){
+  var w = document.getElementById("periodWidget");
+  var active = document.querySelector(".nav-btn.active").dataset.tab;
+  if(state.draft && (active==="rangkuman")){
+    w.style.display = "block";
+    document.getElementById("periodVal").textContent = hijriMonthLabel(state.draft.hijriYear, state.draft.hijriMonth);
+    document.getElementById("periodSub").textContent = state.draft.instansiList.length+" instansi dalam draft ini";
+  } else {
+    w.style.display = "none";
+  }
+}
+
+// ================= Upload & proses file =================
+document.getElementById("btnAddFiles").addEventListener("click", function(){
+  document.getElementById("fileInput").click();
+});
+document.getElementById("fileInput").addEventListener("change", function(e){
+  var files = Array.prototype.slice.call(e.target.files||[]);
+  files.forEach(function(f){
+    var ext = f.name.toLowerCase().endsWith(".docx") ? "docx" : (f.name.toLowerCase().endsWith(".json") ? "json" : null);
+    if(!ext){ toast("Lewati "+f.name+" (bukan .json/.docx)"); return; }
+    state.stagingFiles.push({
+      id: uid(), file: f, name: f.name, type: ext,
+      instansiNama: f.name.replace(/\.(json|docx)$/i,"").replace(/[_-]+/g," "),
+      userEditedName: false,
+      status: "pending", warnings: [], items: []
+    });
+  });
+  e.target.value = "";
+  renderFileRows();
+});
+
+function renderFileRows(){
+  var wrap = document.getElementById("fileRowsWrap");
+  wrap.innerHTML = "";
+  document.getElementById("fileEmptyNote").style.display = state.stagingFiles.length ? "none" : "block";
+  document.getElementById("processAreaWrap").style.display = state.stagingFiles.length ? "block" : "none";
+  state.stagingFiles.forEach(function(sf){
+    var statusHtml = "";
+    if(sf.status==="pending") statusHtml = '<span class="fstatus pending">○ Menunggu diproses</span>';
+    else if(sf.status==="processing") statusHtml = '<span class="fstatus pending"><span class="spinner"></span> Memproses...</span>';
+    else if(sf.status==="ok") statusHtml = '<span class="fstatus ok">✓ Terbaca lengkap ('+sf.items.length+' kegiatan)</span>';
+    else if(sf.status==="warn") statusHtml = '<span class="fstatus warn">⚠ Terbaca sebagian ('+sf.items.length+' kegiatan, '+sf.warnings.length+' catatan)</span>';
+    else if(sf.status==="fail") statusHtml = '<span class="fstatus fail">✕ Gagal dibaca</span>';
+
+    var row = document.createElement("div");
+    row.className = "file-row";
+    row.innerHTML =
+      '<div class="ftype '+(sf.type==="docx"?"docx":"")+'">'+(sf.type==="docx"?"📝":"⛁")+'</div>'+
+      '<div class="fmid">'+
+        '<div class="fname">'+escapeHtml(sf.name)+'</div>'+
+        '<input type="text" placeholder="Nama instansi" value="'+escapeHtml(sf.instansiNama)+'" data-id="'+sf.id+'">'+
+        statusHtml+
+      '</div>'+
+      '<button class="fdel" data-id="'+sf.id+'">✕</button>';
+    wrap.appendChild(row);
+  });
+  wrap.querySelectorAll("input[type=text]").forEach(function(inp){
+    inp.addEventListener("input", function(){
+      var sf = state.stagingFiles.find(function(x){return x.id===inp.dataset.id;});
+      if(sf){ sf.instansiNama = inp.value; sf.userEditedName = true; }
+    });
+  });
+  wrap.querySelectorAll(".fdel").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      state.stagingFiles = state.stagingFiles.filter(function(x){return x.id!==btn.dataset.id;});
+      renderFileRows();
+      document.getElementById("monthPickWrap").style.display = "none";
+    });
+  });
+}
+
+function readFileAsText(f){
+  return new Promise(function(res,rej){
+    var r = new FileReader();
+    r.onload = function(){ res(r.result); };
+    r.onerror = rej;
+    r.readAsText(f);
+  });
+}
+function readFileAsArrayBuffer(f){
+  return new Promise(function(res,rej){
+    var r = new FileReader();
+    r.onload = function(){ res(r.result); };
+    r.onerror = rej;
+    r.readAsArrayBuffer(f);
+  });
+}
+
+document.getElementById("btnProcessFiles").addEventListener("click", async function(){
+  if(state.stagingFiles.some(function(sf){ return !sf.instansiNama.trim(); })){
+    toast("Isi nama instansi untuk semua file dulu"); return;
+  }
+  var btn = this; btn.disabled = true; btn.textContent = "Memproses...";
+  for(var i=0;i<state.stagingFiles.length;i++){
+    var sf = state.stagingFiles[i];
+    sf.status = "processing"; renderFileRows();
+    try{
+      if(sf.type==="json"){
+        var text = await readFileAsText(sf.file);
+        var data = JSON.parse(text);
+        sf.items = normalizeFromJsonBackup(data);
+        sf.warnings = [];
+        sf.status = sf.items.length ? "ok" : "warn";
+        if(!sf.items.length) sf.warnings.push("File terbaca tapi tidak ada kegiatan/insidentil di dalamnya.");
+        if(!sf.userEditedName){
+          var detectedJson = detectInstansiNameFromJson(data);
+          if(detectedJson) sf.instansiNama = detectedJson;
+        }
+      } else {
+        var buf = await readFileAsArrayBuffer(sf.file);
+        var result = await mammoth.extractRawText({arrayBuffer: buf});
+        var parsed = parseFromDocxText(result.value || "");
+        sf.items = parsed.items;
+        sf.warnings = parsed.warnings;
+        sf.status = parsed.items.length===0 ? "fail" : (parsed.warnings.length ? "warn" : "ok");
+        if(!sf.userEditedName){
+          var detectedDocx = detectInstansiNameFromDocx(result.value || "");
+          if(detectedDocx) sf.instansiNama = detectedDocx;
+        }
+      }
+    }catch(err){
+      sf.status = "fail";
+      sf.warnings = ["Gagal membaca file: "+(err&&err.message?err.message:String(err))];
+    }
+    renderFileRows();
+  }
+  btn.disabled = false; btn.textContent = "Proses Semua File";
+  buildMonthPicker();
+});
+
+function buildMonthPicker(){
+  var monthMap = {}; // key -> count
+  state.stagingFiles.forEach(function(sf){
+    sf.items.forEach(function(it){
+      if(it.hijriMonthKey){ monthMap[it.hijriMonthKey] = (monthMap[it.hijriMonthKey]||0)+1; }
+    });
+  });
+  var keys = Object.keys(monthMap).sort().reverse();
+  var wrap = document.getElementById("monthPickWrap");
+  var listEl = document.getElementById("monthPickList");
+  var manualWrap = document.getElementById("manualMonthPick");
+  listEl.innerHTML = "";
+  state.selectedMonthKey = null;
+
+  if(keys.length===0){
+    manualWrap.style.display = "block";
+    if(!document.getElementById("manualMonthSelect").options.length){
+      HIJRI_MONTHS.forEach(function(name,i){
+        var o = document.createElement("option"); o.value = i+1; o.textContent = name;
+        document.getElementById("manualMonthSelect").appendChild(o);
+      });
+    }
+  } else {
+    manualWrap.style.display = "none";
+    keys.forEach(function(k, idx){
+      var parts = k.split("-"); var hy = parseInt(parts[1],10), hm = parseInt(parts[2],10);
+      var row = document.createElement("div");
+      row.className = "month-pick-row"+(idx===0?" selected":"");
+      row.dataset.key = k;
+      row.innerHTML = '<span class="mlabel">'+hijriMonthLabel(hy,hm)+'</span><span class="mcount">'+monthMap[k]+' kegiatan</span>';
+      row.addEventListener("click", function(){
+        listEl.querySelectorAll(".month-pick-row").forEach(function(r){ r.classList.remove("selected"); });
+        row.classList.add("selected");
+        state.selectedMonthKey = k;
+      });
+      listEl.appendChild(row);
+      if(idx===0) state.selectedMonthKey = k;
+    });
+  }
+  wrap.style.display = "block";
+}
+
+document.getElementById("btnBuildDraft").addEventListener("click", function(){
+  var hy, hm;
+  if(state.selectedMonthKey){
+    var parts = state.selectedMonthKey.split("-"); hy = parseInt(parts[1],10); hm = parseInt(parts[2],10);
+  } else {
+    hm = parseInt(document.getElementById("manualMonthSelect").value,10);
+    hy = parseInt(document.getElementById("manualYearInput").value,10);
+    if(!hy){ toast("Isi tahun Hijriah dulu"); return; }
+  }
+  var monthKey = hijriKey(hy,hm);
+
+  var instansiList = state.stagingFiles.map(function(sf){
+    var itemsInMonth = sf.items.filter(function(it){ return it.hijriMonthKey===monthKey || (!it.hijriMonthKey && sf.type==="docx"); });
+    return {
+      nama: sf.instansiNama.trim(),
+      sourceType: sf.type,
+      warnings: sf.warnings.slice(),
+      items: itemsInMonth
+    };
+  }).filter(function(ins){ return ins.items.length>0 || ins.warnings.length>0; });
+
+  if(instansiList.length===0){ toast("Tidak ada data pada bulan yang dipilih"); return; }
+
+  state.draft = { hijriYear: hy, hijriMonth: hm, instansiList: instansiList, catatanKoordinator: "" };
+  state.stagingFiles = [];
+  document.getElementById("fileInput").value = "";
+  renderFileRows();
+  document.getElementById("monthPickWrap").style.display = "none";
+  renderDraft();
+  showTab("rangkuman");
+  toast("Rangkuman "+hijriMonthLabel(hy,hm)+" siap ditinjau");
+});
+
+// ================= Kategorisasi 5 poin per instansi =================
+// Satu kegiatan = satu kartu, judul cuma muncul sekali, semua hasilnya (capaian/hasil
+// penting/kendala/perlu dibahas/rekomendasi) ditaruh sebagai baris berlabel di bawahnya.
+function buildActivityCards(ins){
+  return ins.items.map(function(it){
+    var rows = [];
+    if(it.isInsidentil){
+      rows.push({label:"Capaian", text:"Terlaksana (kegiatan insidentil)"});
+    } else if(it.belumEvaluasi){
+      rows.push({label:"Status", text:"Belum ada catatan evaluasi dari instansi.", tone:"warn"});
+      rows.push({label:"Perlu Dibahas", text:"Belum ada catatan evaluasi dari instansi.", tone:"danger"});
+    } else {
+      var statusTxt = STATUS_LABEL[it.statusPelaksanaan] || "-";
+      var capTxt = it.capaianTarget ? CAPAIAN_LABEL[it.capaianTarget] : (it.capaianTargetText || "-");
+      rows.push({label:"Capaian", text: statusTxt+" · "+capTxt});
+      if(it.statusPelaksanaan==="batal"){
+        rows.push({label:"Perlu Dibahas", text:"Tidak terlaksana pada bulan ini.", tone:"danger"});
+      }
+    }
+    if(it.indikatorKeberhasilan) rows.push({label:"Hasil Penting", text: it.indikatorKeberhasilan});
+    if(it.kendala) rows.push({label:"Kendala", text: it.kendala});
+    if(it.rencanaTindakLanjut) rows.push({label:"Rekomendasi", text: it.rencanaTindakLanjut});
+    return {judul: it.judul, tanggal: it.hijriDateLabel, rows: rows};
+  });
+}
+
+function activityCardHtml(c){
+  var html = '<div class="kat-item"><p class="kjudul">'+escapeHtml(c.judul)+' <span class="ktanggal">— '+escapeHtml(c.tanggal)+'</span></p>';
+  c.rows.forEach(function(r){
+    var tone = r.tone ? (" tone-"+r.tone) : "";
+    html += '<p class="ktext'+tone+'"><b>'+escapeHtml(r.label)+':</b> '+escapeHtml(r.text)+'</p>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function instansiBodyHtml(ins){
+  var html = "";
+  if(ins.warnings.length){
+    html += '<div class="instansi-warn">⚠ '+ins.warnings.map(escapeHtml).join('<br>')+'</div>';
+  }
+  var cards = buildActivityCards(ins);
+  if(cards.length===0){
+    html += '<div class="kat-empty">Tidak ada kegiatan tercatat.</div>';
+  } else {
+    cards.forEach(function(c){ html += activityCardHtml(c); });
+  }
+  return html;
+}
+
+function renderDraft(){
+  var has = !!state.draft;
+  document.getElementById("rangkumanEmpty").style.display = has ? "none" : "block";
+  document.getElementById("rangkumanWrap").style.display = has ? "block" : "none";
+  if(!has) return;
+  var wrap = document.getElementById("instansiListWrap");
+  wrap.innerHTML = "";
+  state.draft.instansiList.forEach(function(ins, idx){
+    var card = document.createElement("div");
+    card.className = "instansi-card";
+    card.innerHTML =
+      '<div class="instansi-head" data-idx="'+idx+'">'+
+        '<div><div class="iname">'+escapeHtml(ins.nama)+'</div><div class="icount">'+ins.items.length+' kegiatan tercatat</div></div>'+
+        '<span class="chev">▾</span>'+
+      '</div>'+
+      '<div class="instansi-body">'+instansiBodyHtml(ins)+'</div>';
+    wrap.appendChild(card);
+  });
+  wrap.querySelectorAll(".instansi-head").forEach(function(h){
+    h.addEventListener("click", function(){
+      h.classList.toggle("collapsed");
+      h.nextElementSibling.classList.toggle("collapsed");
+    });
+  });
+  document.getElementById("catatanKoordinator").value = state.draft.catatanKoordinator || "";
+  updatePeriodWidget();
+}
+document.getElementById("catatanKoordinator").addEventListener("input", function(){
+  if(state.draft) state.draft.catatanKoordinator = this.value;
+});
+
+document.getElementById("btnBatalkanDraft").addEventListener("click", async function(){
+  var ok = await showConfirm("Draft rangkuman yang sedang ditinjau akan dihapus (belum disimpan ke arsip). Yakin?", "Hapus Draft");
+  if(!ok) return;
+  state.draft = null;
+  renderDraft();
+  showTab("upload");
+});
+
+// ================= Export Word (bahan musyawarah) =================
+function composeWordHtml(entry){
+  var html = "<h1>Bahan Musyawarah</h1>";
+  html += "<p>Periode: "+escapeHtml(hijriMonthLabel(entry.hijriYear, entry.hijriMonth))+"</p>";
+  entry.instansiList.forEach(function(ins){
+    html += "<h2>"+escapeHtml(ins.nama)+"</h2>";
+    var cards = buildActivityCards(ins);
+    if(cards.length===0){ html += "<p><em>Tidak ada kegiatan tercatat.</em></p>"; }
+    cards.forEach(function(c){
+      html += "<h3>"+escapeHtml(c.judul)+" — "+escapeHtml(c.tanggal)+"</h3><ul>";
+      c.rows.forEach(function(r){ html += "<li><b>"+escapeHtml(r.label)+":</b> "+escapeHtml(r.text)+"</li>"; });
+      html += "</ul>";
+    });
+  });
+  html += "<h2>Catatan Koordinator</h2>";
+  html += "<p>"+(entry.catatanKoordinator ? escapeHtml(entry.catatanKoordinator).replace(/\n/g,"<br>") : "<em>(tidak ada catatan tambahan)</em>")+"</p>";
+  return html;
+}
+
+function exportWordBlob(entry){
+  var bodyHtml = composeWordHtml(entry);
+  var fullHtml =
+    '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">'+
+    '<head><meta charset="utf-8"><title>Bahan Musyawarah</title>'+
+    '<style>body{font-family:"Times New Roman",Times,serif;font-size:12pt;line-height:1.5;color:#222;} h1{font-size:16pt;} h2{font-size:14pt;margin-top:20px;} h3{font-size:12.5pt;margin-top:14px;margin-bottom:2px;} li{margin-bottom:4px;text-align:justify;}</style>'+
+    '</head><body>'+bodyHtml+'</body></html>';
+  return new Blob(['\ufeff', fullHtml], {type:'application/msword'});
+}
+
+function exportDataPackage(entry){
+  var pkg = {
+    aplikasi: "rangkuman",
+    periode: { hijriYear: entry.hijriYear, hijriMonth: entry.hijriMonth, label: hijriMonthLabel(entry.hijriYear, entry.hijriMonth) },
+    instansi: entry.instansiList.map(function(ins){
+      return { nama: ins.nama, kegiatan: buildActivityCards(ins) };
+    }),
+    catatanKoordinator: entry.catatanKoordinator || "",
+    createdAt: entry.createdAt
+  };
+  return new Blob([JSON.stringify(pkg, null, 2)], {type:"application/json"});
+}
+
+document.getElementById("btnFinalisasi").addEventListener("click", async function(){
+  if(!state.draft) return;
+  var entry = Object.assign({}, state.draft, { id: uid(), createdAt: Date.now() });
+  state.arsipRangkuman.push(entry);
+  save();
+
+  var vh = entry.hijriYear+"-"+String(entry.hijriMonth).padStart(2,"0");
+  var wordBlob = exportWordBlob(entry);
+  var dataBlob = exportDataPackage(entry);
+  var wFile = "bahan-musyawarah-"+vh+"-H.doc";
+  var dFile = "paket-data-rangkuman-"+vh+"-H.json";
+
+  var save1 = (window.AgendaFiles ? window.AgendaFiles.saveOrShareBlob(wFile, wordBlob, {offerShare:false}) : Promise.resolve());
+  await save1;
+  var save2 = (window.AgendaFiles ? window.AgendaFiles.saveOrShareBlob(dFile, dataBlob) : Promise.resolve());
+  await save2;
+
+  toast("Bahan musyawarah tersimpan ke Arsip & file berhasil diekspor");
+  state.draft = null;
+  renderDraft();
+  showTab("arsip");
+});
+
+// ================= Arsip Rangkuman =================
+// ================= Panel info kanan (layar sangat lebar) =================
+function renderSidePanel(){
+  var panel = document.getElementById("sideInfoPanel");
+  if(!panel) return;
+  var totalRangkuman = state.arsipRangkuman.length;
+  var totalPutusan = state.arsipMusyawarah.length;
+  var totalInstansi = state.arsipRangkuman.reduce(function(s,e){ return s+e.instansiList.length; }, 0);
+  var last = state.arsipRangkuman.slice().sort(function(a,b){ return b.createdAt-a.createdAt; })[0];
+  var lastLabel = last ? hijriMonthLabel(last.hijriYear, last.hijriMonth) : "—";
+  panel.innerHTML =
+    '<h4>Ringkasan Aplikasi</h4>'+
+    '<div class="side-stat"><p class="slbl">Rangkuman Tersimpan</p><p class="sval">'+totalRangkuman+'</p></div>'+
+    '<div class="side-stat"><p class="slbl">Putusan Musyawarah</p><p class="sval">'+totalPutusan+'</p></div>'+
+    '<div class="side-stat"><p class="slbl">Total Instansi Terekap</p><p class="sval">'+totalInstansi+'</p></div>'+
+    '<div class="side-stat"><p class="slbl">Rangkuman Terakhir</p><p class="sval" style="font-size:14px;">'+escapeHtml(lastLabel)+'</p></div>'+
+    '<h4>Tips</h4>'+
+    '<div class="side-tip">Isi kolom <b>Nama Instansi</b> di Pengaturan Agenda Kerja supaya nama instansi di sini terisi otomatis saat backup diunggah, tidak perlu diketik manual.</div>'+
+    '<div class="side-tip">File .docx tetap bisa dibaca meski tanpa backup .json, tapi hasilnya paling akurat kalau instansi rutin mengirim backup .json dari Agenda Kerja.</div>';
+}
+
+function renderArsipList(){
+  var wrap = document.getElementById("arsipListWrap");
+  wrap.innerHTML = "";
+  var sorted = state.arsipRangkuman.slice().sort(function(a,b){ return b.createdAt-a.createdAt; });
+  document.getElementById("arsipEmptyNote").style.display = sorted.length ? "none" : "block";
+  sorted.forEach(function(entry){
+    var totalKeg = entry.instansiList.reduce(function(s,i){ return s+i.items.length; }, 0);
+    var putusanCount = state.arsipMusyawarah.filter(function(p){ return p.rangkumanId===entry.id; }).length;
+    var card = document.createElement("div");
+    card.className = "arsip-card";
+    card.dataset.id = entry.id;
+    card.innerHTML =
+      '<div class="atop"><span class="aperiode">'+escapeHtml(hijriMonthLabel(entry.hijriYear, entry.hijriMonth))+'</span>'+
+      '<span class="adate">'+new Date(entry.createdAt).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})+'</span></div>'+
+      '<div class="ameta">'+entry.instansiList.length+' instansi · '+totalKeg+' kegiatan tercatat</div>'+
+      '<div class="atags"><span class="tag">'+entry.instansiList.length+' instansi</span>'+(putusanCount?'<span class="tag putusan">'+putusanCount+' putusan</span>':'')+'</div>';
+    card.addEventListener("click", function(){ openDetailArsip(entry.id); });
+    wrap.appendChild(card);
+  });
+  renderSidePanel();
+}
+
+var detailArsipBackdrop = document.getElementById("detailArsipBackdrop");
+var currentDetailArsipId = null;
+function openDetailArsip(id){
+  var entry = state.arsipRangkuman.find(function(e){ return e.id===id; });
+  if(!entry) return;
+  currentDetailArsipId = id;
+  document.getElementById("detailArsipTitle").textContent = hijriMonthLabel(entry.hijriYear, entry.hijriMonth);
+  document.getElementById("detailArsipSub").textContent = entry.instansiList.length+" instansi · dibuat "+new Date(entry.createdAt).toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"});
+  var body = "";
+  entry.instansiList.forEach(function(ins){
+    body += '<div class="instansi-card"><div class="instansi-head"><div><div class="iname">'+escapeHtml(ins.nama)+'</div><div class="icount">'+ins.items.length+' kegiatan</div></div></div><div class="instansi-body">'+instansiBodyHtml(ins)+'</div></div>';
+  });
+  body += '<div class="section-title">Catatan Koordinator</div><div class="info-card"><p>'+(entry.catatanKoordinator?escapeHtml(entry.catatanKoordinator).replace(/\n/g,"<br>"):"<em>(tidak ada catatan)</em>")+'</p></div>';
+  document.getElementById("detailArsipBody").innerHTML = body;
+  detailArsipBackdrop.classList.add("open");
+}
+document.getElementById("btnDetailArsipTutup").addEventListener("click", function(){ detailArsipBackdrop.classList.remove("open"); });
+detailArsipBackdrop.addEventListener("click", function(e){ if(e.target===this) this.classList.remove("open"); });
+document.getElementById("btnDetailArsipExport").addEventListener("click", async function(){
+  var entry = state.arsipRangkuman.find(function(e){ return e.id===currentDetailArsipId; });
+  if(!entry) return;
+  var vh = entry.hijriYear+"-"+String(entry.hijriMonth).padStart(2,"0");
+  var blob = exportWordBlob(entry);
+  await (window.AgendaFiles ? window.AgendaFiles.saveOrShareBlob("bahan-musyawarah-"+vh+"-H.doc", blob) : Promise.resolve());
+  toast("File Word diekspor ulang");
+});
+document.getElementById("btnDetailArsipHapus").addEventListener("click", async function(){
+  var ok = await showConfirm("Rangkuman ini beserta seluruh isinya akan dihapus permanen dari arsip. Putusan musyawarah terkait tidak ikut terhapus. Yakin?", "Hapus");
+  if(!ok) return;
+  state.arsipRangkuman = state.arsipRangkuman.filter(function(e){ return e.id!==currentDetailArsipId; });
+  save();
+  detailArsipBackdrop.classList.remove("open");
+  renderArsipList();
+  toast("Rangkuman dihapus dari arsip");
+});
+
+// ================= Musyawarah =================
+function renderPutusanSelect(){
+  var sel = document.getElementById("putusanRangkumanSelect");
+  var currentVal = sel.value;
+  sel.innerHTML = '<option value="">— Umum (tidak terkait rangkuman tertentu) —</option>';
+  state.arsipRangkuman.slice().sort(function(a,b){ return b.createdAt-a.createdAt; }).forEach(function(entry){
+    var o = document.createElement("option");
+    o.value = entry.id; o.textContent = hijriMonthLabel(entry.hijriYear, entry.hijriMonth);
+    sel.appendChild(o);
+  });
+  sel.value = currentVal || "";
+}
+
+document.getElementById("btnSimpanPutusan").addEventListener("click", function(){
+  var isi = document.getElementById("putusanIsi").value.trim();
+  if(!isi){ toast("Isi hasil putusan dulu"); return; }
+  var rangkumanId = document.getElementById("putusanRangkumanSelect").value || null;
+  var entry = state.arsipRangkuman.find(function(e){ return e.id===rangkumanId; });
+  state.arsipMusyawarah.push({
+    id: uid(), rangkumanId: rangkumanId,
+    periodeLabel: entry ? hijriMonthLabel(entry.hijriYear, entry.hijriMonth) : "Umum",
+    keputusan: isi, createdAt: Date.now()
+  });
+  save();
+  document.getElementById("putusanIsi").value = "";
+  document.getElementById("putusanRangkumanSelect").value = "";
+  renderPutusanList();
+  toast("Putusan musyawarah tersimpan");
+});
+
+function renderPutusanList(){
+  var wrap = document.getElementById("putusanListWrap");
+  wrap.innerHTML = "";
+  var sorted = state.arsipMusyawarah.slice().sort(function(a,b){ return b.createdAt-a.createdAt; });
+  document.getElementById("putusanEmptyNote").style.display = sorted.length ? "none" : "block";
+  sorted.forEach(function(p){
+    var card = document.createElement("div");
+    card.className = "arsip-card";
+    var preview = p.keputusan.length>110 ? p.keputusan.slice(0,110)+"…" : p.keputusan;
+    card.innerHTML =
+      '<div class="atop"><span class="aperiode">'+escapeHtml(p.periodeLabel)+'</span>'+
+      '<span class="adate">'+new Date(p.createdAt).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})+'</span></div>'+
+      '<div class="ameta">'+escapeHtml(preview)+'</div>';
+    card.addEventListener("click", function(){ openDetailPutusan(p.id); });
+    wrap.appendChild(card);
+  });
+  renderSidePanel();
+}
+
+var detailPutusanBackdrop = document.getElementById("detailPutusanBackdrop");
+var currentDetailPutusanId = null;
+function openDetailPutusan(id){
+  var p = state.arsipMusyawarah.find(function(x){ return x.id===id; });
+  if(!p) return;
+  currentDetailPutusanId = id;
+  document.getElementById("detailPutusanSub").textContent = p.periodeLabel+" · dicatat "+new Date(p.createdAt).toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"});
+  document.getElementById("detailPutusanIsi").value = p.keputusan;
+  detailPutusanBackdrop.classList.add("open");
+}
+document.getElementById("btnDetailPutusanTutup").addEventListener("click", function(){ detailPutusanBackdrop.classList.remove("open"); });
+detailPutusanBackdrop.addEventListener("click", function(e){ if(e.target===this) this.classList.remove("open"); });
+document.getElementById("btnDetailPutusanSimpan").addEventListener("click", function(){
+  var p = state.arsipMusyawarah.find(function(x){ return x.id===currentDetailPutusanId; });
+  if(!p) return;
+  var v = document.getElementById("detailPutusanIsi").value.trim();
+  if(!v){ toast("Isi tidak boleh kosong"); return; }
+  p.keputusan = v;
+  save();
+  detailPutusanBackdrop.classList.remove("open");
+  renderPutusanList();
+  toast("Perubahan disimpan");
+});
+document.getElementById("btnDetailPutusanHapus").addEventListener("click", async function(){
+  var ok = await showConfirm("Putusan musyawarah ini akan dihapus permanen. Yakin?", "Hapus");
+  if(!ok) return;
+  state.arsipMusyawarah = state.arsipMusyawarah.filter(function(x){ return x.id!==currentDetailPutusanId; });
+  save();
+  detailPutusanBackdrop.classList.remove("open");
+  renderPutusanList();
+  toast("Putusan dihapus");
+});
+
+// ================= Pengaturan =================
+document.getElementById("setHijriOffset").addEventListener("change", function(){
+  state.settings.hijriOffset = parseInt(this.value,10)||0;
+  save();
+  toast("Koreksi tanggal Hijriah disimpan");
+});
+
+document.getElementById("btnExportAll").addEventListener("click", function(){
+  var blob = new Blob([JSON.stringify({settings:state.settings, arsipRangkuman:state.arsipRangkuman, arsipMusyawarah:state.arsipMusyawarah}, null, 2)], {type:"application/json"});
+  var filename = "backup-rangkuman-"+todayISO()+".json";
+  (window.AgendaFiles ? window.AgendaFiles.saveOrShareBlob(filename, blob) : Promise.resolve()).then(function(){
+    toast("Backup data diekspor");
+  });
+});
+document.getElementById("btnImportAll").addEventListener("click", function(){ document.getElementById("fileImportAll").click(); });
+document.getElementById("fileImportAll").addEventListener("change", function(e){
+  var file = e.target.files[0]; if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(){
+    try{
+      var data = JSON.parse(reader.result);
+      var existingIds = new Set(state.arsipRangkuman.map(function(x){return x.id;}));
+      var added = 0;
+      (data.arsipRangkuman||[]).forEach(function(x){ if(x&&x.id&&!existingIds.has(x.id)){ state.arsipRangkuman.push(x); added++; } });
+      var existingPutusanIds = new Set(state.arsipMusyawarah.map(function(x){return x.id;}));
+      (data.arsipMusyawarah||[]).forEach(function(x){ if(x&&x.id&&!existingPutusanIds.has(x.id)){ state.arsipMusyawarah.push(x); } });
+      if(data.settings) state.settings = Object.assign({}, state.settings, data.settings);
+      save(); renderArsipList(); renderPutusanList();
+      toast(added+" rangkuman diimpor");
+    }catch(err){ toast("Gagal membaca file backup"); }
+    e.target.value = "";
+  };
+  reader.readAsText(file);
+});
+document.getElementById("btnResetAll").addEventListener("click", async function(){
+  var ok = await showConfirm("Semua data (arsip rangkuman & putusan musyawarah) akan dihapus permanen dari perangkat ini. Yakin?", "Hapus Semua");
+  if(!ok) return;
+  state.arsipRangkuman = []; state.arsipMusyawarah = []; state.draft = null;
+  save(); renderDraft(); renderArsipList(); renderPutusanList();
+  toast("Semua data dihapus");
+});
+
+// ================= Konfirmasi (pengganti window.confirm) =================
+var confirmBackdrop = document.getElementById("confirmBackdrop");
+var confirmResolve = null;
+function showConfirm(message, okLabel){
+  return new Promise(function(resolve){
+    document.getElementById("confirmMsg").textContent = message;
+    document.getElementById("btnConfirmOk").textContent = okLabel || "Hapus";
+    confirmResolve = resolve;
+    confirmBackdrop.classList.add("open");
+  });
+}
+document.getElementById("btnConfirmCancel").addEventListener("click", function(){
+  confirmBackdrop.classList.remove("open");
+  if(confirmResolve){ confirmResolve(false); confirmResolve=null; }
+});
+document.getElementById("btnConfirmOk").addEventListener("click", function(){
+  confirmBackdrop.classList.remove("open");
+  if(confirmResolve){ confirmResolve(true); confirmResolve=null; }
+});
+confirmBackdrop.addEventListener("click", function(e){
+  if(e.target===this){ this.classList.remove("open"); if(confirmResolve){ confirmResolve(false); confirmResolve=null; } }
+});
+
+// ================= INIT =================
+load();
+document.getElementById("setHijriOffset").value = state.settings.hijriOffset || 0;
+renderFileRows();
+renderDraft();
+renderArsipList();
+renderPutusanList();
+renderSidePanel();
+</script>
+</body>
+</html>
