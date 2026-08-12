@@ -372,6 +372,13 @@
       </div>
       <button class="btn btn-primary btn-block" id="btnSimpanPutusan">Simpan Putusan</button>
 
+      <div class="upload-drop" id="btnImportPutusanKesekretariatan" style="padding:14px;margin-top:4px;">
+        <div class="ic" style="font-size:18px;margin-bottom:2px;">📥</div>
+        <div class="t1" style="font-size:12.5px;">Impor Putusan dari Kesekretariatan</div>
+        <div class="t2">File "Putusan untuk Disebarkan" dari Aplikasi 3</div>
+      </div>
+      <input type="file" id="filePutusanKesekretariatan" accept=".json" style="display:none;">
+
       <div class="section-title">Arsip Putusan</div>
       <div id="putusanListWrap"></div>
       <div class="empty-note" id="putusanEmptyNote">Belum ada putusan musyawarah tersimpan.</div>
@@ -1248,13 +1255,42 @@ document.getElementById("btnSimpanPutusan").addEventListener("click", function()
   state.arsipMusyawarah.push({
     id: uid(), rangkumanId: rangkumanId,
     periodeLabel: entry ? hijriMonthLabel(entry.hijriYear, entry.hijriMonth) : "Umum",
-    keputusan: isi, createdAt: Date.now()
+    keputusan: isi, createdAt: Date.now(), sumber: "lokal"
   });
   save();
   document.getElementById("putusanIsi").value = "";
   document.getElementById("putusanRangkumanSelect").value = "";
   renderPutusanList();
   toast("Putusan musyawarah tersimpan");
+});
+
+// ================= Impor Putusan dari Kesekretariatan (Aplikasi 3) =================
+document.getElementById("btnImportPutusanKesekretariatan").addEventListener("click", function(){
+  document.getElementById("filePutusanKesekretariatan").click();
+});
+document.getElementById("filePutusanKesekretariatan").addEventListener("change", async function(e){
+  var f = e.target.files[0]; if(!f) return;
+  e.target.value = "";
+  try{
+    var text = await readFileAsText(f);
+    var data = JSON.parse(text);
+    if(data.aplikasi !== "kesekretariatan-putusan"){
+      toast("File ini bukan Putusan untuk Disebarkan dari Aplikasi 3"); return;
+    }
+    var periodeLabel = data.periode ? data.periode.label : "-";
+    var gabung = "PUTUSAN:\n"+(data.putusan||"(tidak ada)")+"\n\nARAHAN:\n"+(data.arahan||"(tidak ada)");
+    state.arsipMusyawarah.push({
+      id: uid(), rangkumanId: null,
+      periodeLabel: periodeLabel,
+      keputusan: gabung, createdAt: Date.now(),
+      sumber: "kesekretariatan", shafAsal: data.shaf || ""
+    });
+    save();
+    renderPutusanList();
+    toast("Putusan dari Kesekretariatan berhasil diimpor");
+  }catch(err){
+    toast("Gagal membaca file: "+(err&&err.message?err.message:String(err)));
+  }
 });
 
 function renderPutusanList(){
@@ -1266,10 +1302,11 @@ function renderPutusanList(){
     var card = document.createElement("div");
     card.className = "arsip-card";
     var preview = p.keputusan.length>110 ? p.keputusan.slice(0,110)+"…" : p.keputusan;
+    var tagHtml = p.sumber==="kesekretariatan" ? '<div class="atags"><span class="tag putusan">Dari '+escapeHtml(p.shafAsal||"Kesekretariatan")+'</span></div>' : "";
     card.innerHTML =
       '<div class="atop"><span class="aperiode">'+escapeHtml(p.periodeLabel)+'</span>'+
       '<span class="adate">'+new Date(p.createdAt).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})+'</span></div>'+
-      '<div class="ameta">'+escapeHtml(preview)+'</div>';
+      '<div class="ameta">'+escapeHtml(preview)+'</div>'+tagHtml;
     card.addEventListener("click", function(){ openDetailPutusan(p.id); });
     wrap.appendChild(card);
   });
@@ -1282,7 +1319,7 @@ function openDetailPutusan(id){
   var p = state.arsipMusyawarah.find(function(x){ return x.id===id; });
   if(!p) return;
   currentDetailPutusanId = id;
-  document.getElementById("detailPutusanSub").textContent = p.periodeLabel+" · dicatat "+new Date(p.createdAt).toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"});
+  document.getElementById("detailPutusanSub").textContent = p.periodeLabel+(p.sumber==="kesekretariatan"?" · dari "+(p.shafAsal||"Kesekretariatan"):"")+" · dicatat "+new Date(p.createdAt).toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"});
   document.getElementById("detailPutusanIsi").value = p.keputusan;
   detailPutusanBackdrop.classList.add("open");
 }
