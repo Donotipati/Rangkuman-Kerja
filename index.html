@@ -170,6 +170,17 @@
   .setting-row .lbl{font-size:13.5px;}
   .setting-row .desc{font-size:11px;color:var(--ink-soft);margin-top:2px;}
   .setting-row input{width:82px;padding:7px 9px;border:1px solid var(--paper-line);border-radius:8px;font-size:13px;text-align:center;}
+  .toggle3{display:flex;border:1px solid var(--paper-line);border-radius:10px;overflow:hidden;margin-bottom:14px;}
+  .toggle3 button{flex:1;padding:9px 4px;border:none;background:#fff;font-size:11.5px;font-weight:700;color:var(--ink-soft);cursor:pointer;font-family:inherit;border-right:1px solid var(--paper-line);}
+  .toggle3 button:last-child{border-right:none;}
+  .toggle3 button.active{background:var(--accent);color:#fff;}
+  .lock-overlay{position:fixed;inset:0;background:var(--cover-dark);z-index:999;display:none;align-items:center;justify-content:center;padding:24px;padding-top:calc(24px + env(safe-area-inset-top,0px));padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));}
+  .lock-box{width:100%;max-width:320px;text-align:center;color:var(--paper);}
+  .lock-icon{font-size:40px;margin-bottom:6px;}
+  .lock-box h2{margin:0 0 4px;}
+  .lock-pin-input{width:100%;text-align:center;font-size:26px;letter-spacing:14px;padding:14px 10px 14px 20px;border-radius:12px;border:none;margin-top:18px;font-family:inherit;}
+  .lock-error{color:#ff9b9b;min-height:18px;margin-top:10px;font-size:13px;}
+  .lock-forgot{background:none;border:none;color:var(--accent-light);text-decoration:underline;font-size:13px;margin-top:18px;cursor:pointer;font-family:inherit;}
 
   /* ---------- FAB & bottom nav ---------- */
   .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--cover-dark);display:flex;z-index:25;border-top:1px solid rgba(255,255,255,0.08);padding-bottom:env(safe-area-inset-bottom,0px);}
@@ -272,6 +283,8 @@
         <p class="cover-sub">Dari laporan instansi — tersimpan di perangkat ini</p>
       </div>
       <div class="topbar-tools">
+        <button class="icon-btn" id="btnExportQuick" title="Unduh backup">⬇</button>
+        <button class="icon-btn" id="btnImportQuick" title="Impor backup">⬆</button>
         <button class="icon-btn" id="btnAtur" title="Pengaturan">⚙</button>
       </div>
     </div>
@@ -381,6 +394,18 @@
         <input type="file" id="fileImportAll" accept=".json" style="display:none;">
       </div>
       <div class="setting-group">
+        <h3>Keamanan</h3>
+        <div style="margin-bottom:10px;">
+          <div class="lbl">Kunci Aplikasi (PIN 6 Digit)</div>
+          <div class="desc" style="margin-bottom:8px;">Minta PIN setiap kali app dibuka. Kalau lupa PIN, bisa buka pakai kunci layar HP.</div>
+          <div class="toggle3" id="toggleKunciAplikasi">
+            <button type="button" data-val="ya">Ya</button>
+            <button type="button" data-val="tidak" class="active">Tidak</button>
+          </div>
+        </div>
+        <button class="btn-small" id="btnUbahPin" style="width:100%;display:none;">Ubah PIN</button>
+      </div>
+      <div class="setting-group">
         <h3>Reset</h3>
         <button class="btn-small" style="width:100%;color:var(--danger);border-color:var(--danger-bg);" id="btnResetAll">Hapus Semua Data</button>
       </div>
@@ -446,6 +471,17 @@
   </div>
 
   <div class="toast" id="toast"></div>
+</div>
+
+<div class="lock-overlay" id="lockOverlay">
+  <div class="lock-box">
+    <div class="lock-icon">🔒</div>
+    <h2 id="lockTitle">Masukkan PIN</h2>
+    <p class="empty-note" id="lockSubtitle" style="color:var(--accent-light);"></p>
+    <input type="password" inputmode="numeric" maxlength="6" id="lockPinInput" class="lock-pin-input" autocomplete="off">
+    <p class="lock-error" id="lockError"></p>
+    <button type="button" class="lock-forgot" id="btnLockForgot">Lupa PIN? Gunakan kunci layar HP</button>
+  </div>
 </div>
 
 <div class="side-info-panel" id="sideInfoPanel"></div>
@@ -1040,12 +1076,48 @@ function exportWordBlob(entry){
   return new Blob(['\ufeff', fullHtml], {type:'application/msword'});
 }
 
+// Bentuk kategorisasi khusus buat interop dengan Aplikasi 3 (Kesekretariatan) —
+// beda dari tampilan di layar/Word (yang per-kegiatan), ini dipetakan ke kategori
+// yang dipakai Aplikasi 3: Capaian, Kekurangan, Kendala, Hal Perlu Dibahas.
+// (Hasil Penting digabung ke Capaian, Rekomendasi digabung ke Hal Perlu Dibahas.
+// Kondisi Umum/Temuan/Persoalan bukan urusan Aplikasi 2, itu diisi di Aplikasi 3.)
+function buildAppTigaCategories(ins){
+  var capaian = [], kekurangan = [], kendala = [], perluDibahas = [];
+  ins.items.forEach(function(it){
+    if(it.isInsidentil){
+      var tIns = "Terlaksana (kegiatan insidentil)"+(it.rencanaTindakLanjut ? ". Tindak lanjut: "+it.rencanaTindakLanjut : "");
+      capaian.push({judul: it.judul, tanggal: it.hijriDateLabel, text: tIns});
+      return;
+    }
+    if(it.belumEvaluasi){
+      perluDibahas.push({judul: it.judul, tanggal: it.hijriDateLabel, text: "Belum ada catatan evaluasi dari instansi."});
+      return;
+    }
+    var statusTxt = STATUS_LABEL[it.statusPelaksanaan] || "-";
+    var capTxt = it.capaianTarget ? CAPAIAN_LABEL[it.capaianTarget] : (it.capaianTargetText || "-");
+    var mainText = statusTxt+" · "+capTxt+(it.indikatorKeberhasilan ? ". Hasil: "+it.indikatorKeberhasilan : "");
+    if(it.capaianTarget==="sebagian" || it.capaianTarget==="tidak"){
+      kekurangan.push({judul: it.judul, tanggal: it.hijriDateLabel, text: mainText});
+    } else {
+      capaian.push({judul: it.judul, tanggal: it.hijriDateLabel, text: mainText});
+    }
+    if(it.kendala) kendala.push({judul: it.judul, tanggal: it.hijriDateLabel, text: it.kendala});
+    if(it.statusPelaksanaan==="batal"){
+      perluDibahas.push({judul: it.judul, tanggal: it.hijriDateLabel, text: "Tidak terlaksana pada bulan ini."+(it.rencanaTindakLanjut?" Rencana: "+it.rencanaTindakLanjut:"")});
+    } else if(it.rencanaTindakLanjut){
+      perluDibahas.push({judul: it.judul, tanggal: it.hijriDateLabel, text: "Rekomendasi/tindak lanjut: "+it.rencanaTindakLanjut});
+    }
+  });
+  return {capaian:capaian, kekurangan:kekurangan, kendala:kendala, perluDibahas:perluDibahas};
+}
+
 function exportDataPackage(entry){
   var pkg = {
     aplikasi: "rangkuman",
     periode: { hijriYear: entry.hijriYear, hijriMonth: entry.hijriMonth, label: hijriMonthLabel(entry.hijriYear, entry.hijriMonth) },
     instansi: entry.instansiList.map(function(ins){
-      return { nama: ins.nama, kegiatan: buildActivityCards(ins) };
+      var kat = buildAppTigaCategories(ins);
+      return { nama: ins.nama, capaian: kat.capaian, kekurangan: kat.kekurangan, kendala: kat.kendala, perluDibahas: kat.perluDibahas };
     }),
     catatanKoordinator: entry.catatanKoordinator || "",
     createdAt: entry.createdAt
@@ -1244,16 +1316,14 @@ document.getElementById("setHijriOffset").addEventListener("change", function(){
   toast("Koreksi tanggal Hijriah disimpan");
 });
 
-document.getElementById("btnExportAll").addEventListener("click", function(){
+function doExportAllBackup(){
   var blob = new Blob([JSON.stringify({settings:state.settings, arsipRangkuman:state.arsipRangkuman, arsipMusyawarah:state.arsipMusyawarah}, null, 2)], {type:"application/json"});
   var filename = "backup-rangkuman-"+todayISO()+".json";
   (window.AgendaFiles ? window.AgendaFiles.saveOrShareBlob(filename, blob) : Promise.resolve()).then(function(){
     toast("Backup data diekspor");
   });
-});
-document.getElementById("btnImportAll").addEventListener("click", function(){ document.getElementById("fileImportAll").click(); });
-document.getElementById("fileImportAll").addEventListener("change", function(e){
-  var file = e.target.files[0]; if(!file) return;
+}
+function doImportAllBackup(file){
   var reader = new FileReader();
   reader.onload = function(){
     try{
@@ -1267,10 +1337,18 @@ document.getElementById("fileImportAll").addEventListener("change", function(e){
       save(); renderArsipList(); renderPutusanList();
       toast(added+" rangkuman diimpor");
     }catch(err){ toast("Gagal membaca file backup"); }
-    e.target.value = "";
   };
   reader.readAsText(file);
+}
+document.getElementById("btnExportAll").addEventListener("click", doExportAllBackup);
+document.getElementById("btnImportAll").addEventListener("click", function(){ document.getElementById("fileImportAll").click(); });
+document.getElementById("fileImportAll").addEventListener("change", function(e){
+  var file = e.target.files[0]; if(!file) return;
+  doImportAllBackup(file);
+  e.target.value = "";
 });
+document.getElementById("btnExportQuick").addEventListener("click", doExportAllBackup);
+document.getElementById("btnImportQuick").addEventListener("click", function(){ document.getElementById("fileImportAll").click(); });
 document.getElementById("btnResetAll").addEventListener("click", async function(){
   var ok = await showConfirm("Semua data (arsip rangkuman & putusan musyawarah) akan dihapus permanen dari perangkat ini. Yakin?", "Hapus Semua");
   if(!ok) return;
@@ -1310,6 +1388,92 @@ renderDraft();
 renderArsipList();
 renderPutusanList();
 renderSidePanel();
+
+// ================= App Lock (PIN) =================
+function isNativePlatformCheck(){ return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }
+function nativeBiometricPlugin(){ return window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.NativeBiometric || null : null; }
+async function sha256Hex(str){
+  var enc = new TextEncoder().encode(str);
+  var buf = await crypto.subtle.digest("SHA-256", enc);
+  return Array.prototype.map.call(new Uint8Array(buf), function(b){ return b.toString(16).padStart(2,"0"); }).join("");
+}
+
+var lockState = { mode: "unlock", step: 1, firstPin: "" };
+
+function showLockOverlay(mode){
+  lockState.mode = mode; lockState.step = 1; lockState.firstPin = "";
+  document.getElementById("lockOverlay").style.display = "flex";
+  document.getElementById("lockPinInput").value = "";
+  document.getElementById("lockError").textContent = "";
+  document.getElementById("btnLockForgot").style.display = mode==="unlock" ? "inline-block" : "none";
+  updateLockTexts();
+  setTimeout(function(){ var i=document.getElementById("lockPinInput"); if(i) i.focus(); }, 150);
+}
+function hideLockOverlay(){ document.getElementById("lockOverlay").style.display = "none"; }
+function updateLockTexts(){
+  var title = document.getElementById("lockTitle"), sub = document.getElementById("lockSubtitle");
+  if(lockState.mode==="unlock"){ title.textContent = "Masukkan PIN"; sub.textContent = "Rangkuman Kerja terkunci"; }
+  else if(lockState.mode==="create" && lockState.step===1){ title.textContent = "Buat PIN Baru"; sub.textContent = "Masukkan 6 digit PIN"; }
+  else { title.textContent = "Konfirmasi PIN"; sub.textContent = "Masukkan ulang PIN yang sama"; }
+}
+document.getElementById("lockPinInput").addEventListener("input", function(){
+  var v = this.value.replace(/\D/g,"").slice(0,6);
+  this.value = v;
+  if(v.length===6) handlePinComplete(v);
+});
+async function handlePinComplete(pin){
+  var input = document.getElementById("lockPinInput");
+  if(lockState.mode==="unlock"){
+    var h = await sha256Hex(pin);
+    if(h === state.settings.pinHash){ hideLockOverlay(); }
+    else{ document.getElementById("lockError").textContent = "PIN salah, coba lagi"; input.value=""; }
+  } else if(lockState.mode==="create"){
+    if(lockState.step===1){
+      lockState.firstPin = pin; lockState.step = 2; input.value=""; updateLockTexts();
+    } else {
+      if(pin === lockState.firstPin){
+        state.settings.pinHash = await sha256Hex(pin);
+        state.settings.pinEnabled = true;
+        save(); toast("PIN berhasil disimpan"); hideLockOverlay(); renderAturLockToggle();
+      } else {
+        document.getElementById("lockError").textContent = "PIN tidak sama, ulangi dari awal";
+        lockState.step = 1; lockState.firstPin = ""; input.value=""; updateLockTexts();
+      }
+    }
+  }
+}
+document.getElementById("btnLockForgot").addEventListener("click", async function(){
+  var nb = nativeBiometricPlugin();
+  if(!nb){ toast("Fitur ini cuma tersedia di aplikasi Android"); return; }
+  try{
+    var avail = await nb.isAvailable({ useFallback: true });
+    if(!avail || !avail.isAvailable){ toast("Kunci layar HP belum diatur di HP ini"); return; }
+    await nb.verifyIdentity({ reason:"Verifikasi untuk membuat PIN baru", title:"Verifikasi Kunci HP", useFallback:true, fallbackTitle:"Gunakan PIN/Pola/Sidik Jari HP" });
+    toast("Verifikasi berhasil, buat PIN baru");
+    showLockOverlay("create");
+  }catch(e){ toast("Verifikasi dibatalkan atau gagal"); }
+});
+document.getElementById("toggleKunciAplikasi").addEventListener("click", function(e){
+  var btn = e.target.closest("button"); if(!btn) return;
+  if(btn.dataset.val==="ya"){
+    if(!state.settings.pinHash){ showLockOverlay("create"); }
+    else{ state.settings.pinEnabled = true; save(); renderAturLockToggle(); toast("Kunci aplikasi diaktifkan"); }
+  } else {
+    state.settings.pinEnabled = false; save(); renderAturLockToggle(); toast("Kunci aplikasi dinonaktifkan");
+  }
+});
+document.getElementById("btnUbahPin").addEventListener("click", function(){ showLockOverlay("create"); });
+function renderAturLockToggle(){
+  var wrap = document.getElementById("toggleKunciAplikasi");
+  if(!wrap) return;
+  wrap.querySelectorAll("button").forEach(function(b){ b.classList.toggle("active", b.dataset.val === (state.settings.pinEnabled ? "ya":"tidak")); });
+  var btnUbah = document.getElementById("btnUbahPin");
+  if(btnUbah) btnUbah.style.display = state.settings.pinEnabled ? "block" : "none";
+}
+renderAturLockToggle();
+if(isNativePlatformCheck() && state.settings.pinEnabled && state.settings.pinHash){
+  showLockOverlay("unlock");
+}
 </script>
 </body>
 </html>
