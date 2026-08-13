@@ -330,6 +330,21 @@
         </div>
         <button class="btn btn-teal btn-block" id="btnBuildDraft" style="margin-top:8px;">Buat Rangkuman</button>
       </div>
+
+      <div class="section-title">Ajuan Agenda Bulan Depan</div>
+      <div class="info-card">
+        <p>Terpisah dari laporan di atas — ini rencana kerja instansi buat bulan depan (belum ada evaluasi), diunggah dari file Excel yang dicetak Aplikasi 1. Cuma tersimpan jadi referensi, gak ikut proses Rangkuman/Musyawarah.</p>
+      </div>
+      <div class="upload-drop" id="btnAddAgendaFiles">
+        <div class="ic">🗓</div>
+        <div class="t1">Tambah File Ajuan Agenda</div>
+        <div class="t2">.xls dari Aplikasi 1 — bisa pilih banyak sekaligus</div>
+      </div>
+      <input type="file" id="agendaFileInput" accept=".xls,.xlsx" multiple style="display:none;">
+      <div id="agendaFileRowsWrap"></div>
+      <div id="agendaProcessAreaWrap" style="display:none;">
+        <button class="btn btn-primary btn-block" id="btnSimpanAgendaFiles">Simpan Ajuan Agenda</button>
+      </div>
     </div>
 
     <!-- ============ TAB: RANGKUMAN ============ -->
@@ -357,6 +372,13 @@
       </div>
       <div id="arsipListWrap"></div>
       <div class="empty-note" id="arsipEmptyNote">Belum ada rangkuman yang difinalisasi.</div>
+
+      <div class="section-title">Agenda Diajukan</div>
+      <div class="info-card">
+        <p>Rencana kerja bulan depan yang diajukan tiap instansi — referensi buat musyawarah, bukan bagian dari Rangkuman.</p>
+      </div>
+      <div id="agendaListWrap"></div>
+      <div class="empty-note" id="agendaEmptyNote">Belum ada ajuan agenda yang diunggah.</div>
     </div>
 
     <!-- ============ TAB: MUSYAWARAH ============ -->
@@ -464,6 +486,20 @@
     </div>
   </div>
 
+  <!-- ============ SHEET: Detail Ajuan Agenda ============ -->
+  <div class="sheet-backdrop" id="detailAgendaBackdrop">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <h2 id="detailAgendaTitle">Ajuan Agenda</h2>
+      <p class="sub" id="detailAgendaSub"></p>
+      <div id="detailAgendaList"></div>
+      <div class="btn-row" style="margin-top:10px;">
+        <button class="btn btn-ghost" id="btnDetailAgendaTutup">Tutup</button>
+        <button class="btn btn-danger" id="btnDetailAgendaHapus">Hapus</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ============ SHEET: Konfirmasi ============ -->
   <div class="sheet-backdrop" id="confirmBackdrop">
     <div class="sheet">
@@ -521,7 +557,9 @@ var state = {
   draft: null,              // { hijriYear, hijriMonth, instansiList: [...], catatanKoordinator }
   stagingFiles: [],         // file yang lagi diunggah/diproses sebelum jadi draft
   arsipRangkuman: [],
-  arsipMusyawarah: []
+  arsipMusyawarah: [],
+  stagingAgendaFiles: [],   // file .xls ajuan agenda yang lagi diunggah sebelum disimpan
+  agendaDiajukan: []        // [{ id, instansiNama, fileName, items:[...], uploadedAt }]
 };
 
 function load(){
@@ -532,6 +570,7 @@ function load(){
       state.settings = Object.assign({hijriOffset:0}, data.settings||{});
       state.arsipRangkuman = data.arsipRangkuman || [];
       state.arsipMusyawarah = data.arsipMusyawarah || [];
+      state.agendaDiajukan = data.agendaDiajukan || [];
     }
   }catch(e){}
 }
@@ -539,7 +578,8 @@ function save(){
   localStorage.setItem(STORAGE_KEY, JSON.stringify({
     settings: state.settings,
     arsipRangkuman: state.arsipRangkuman,
-    arsipMusyawarah: state.arsipMusyawarah
+    arsipMusyawarah: state.arsipMusyawarah,
+    agendaDiajukan: state.agendaDiajukan
   }));
 }
 
@@ -750,7 +790,7 @@ function showTab(name){
     b.classList.toggle("active", b.dataset.tab===name);
   });
   if(name==="musyawarah") renderPutusanSelect();
-  if(name==="arsip") renderArsipList();
+  if(name==="arsip"){ renderArsipList(); renderAgendaList(); }
   if(name==="musyawarah") renderPutusanList();
   updatePeriodWidget();
 }
@@ -888,6 +928,183 @@ document.getElementById("btnProcessFiles").addEventListener("click", async funct
   }
   btn.disabled = false; btn.textContent = "Proses Semua File";
   buildMonthPicker();
+});
+
+// ================= Ajuan Agenda Bulan Depan (upload terpisah, .xls dari Aplikasi 1) =================
+// Excel App1 sebenarnya tabel HTML berlabel .xls (bukan file biner Excel asli), jadi cukup
+// dibaca sebagai HTML. Kolom dicari berdasarkan NAMA header (bukan posisi tetap), karena jumlah
+// kolom "Pelaksana & Operasional" bisa beda-beda tergantung kategori pelaksana tiap instansi.
+function parseXlsAgendaFile(text){
+  var container = document.createElement("div");
+  container.style.cssText = "position:absolute;left:-9999px;top:-9999px;";
+  container.innerHTML = text;
+  document.body.appendChild(container);
+  try{
+    var table = container.querySelector("table");
+    if(!table || table.rows.length < 3) return null;
+
+    var row1 = table.rows[0], row2 = table.rows[1];
+    var leafLabels = [];
+    Array.prototype.forEach.call(row1.children, function(cell){
+      var rowspan = parseInt(cell.getAttribute("rowspan")||"1", 10);
+      var colspan = parseInt(cell.getAttribute("colspan")||"1", 10);
+      if(rowspan>=2){
+        leafLabels.push(cell.textContent.trim());
+      } else {
+        for(var i=0;i<colspan;i++){ leafLabels.push(null); }
+      }
+    });
+    var row2Labels = Array.prototype.map.call(row2.children, function(c){ return c.textContent.trim(); });
+    var r2i=0;
+    for(var i=0;i<leafLabels.length;i++){
+      if(leafLabels[i]===null){ leafLabels[i]=row2Labels[r2i]; r2i++; }
+    }
+
+    function colIdx(name){ return leafLabels.indexOf(name); }
+    var idxHari=colIdx("Hari"), idxTgl=colIdx("Tgl"), idxBln=colIdx("Bln"),
+        idxJenis=colIdx("Jenis Kegiatan"), idxTempat=colIdx("Tempat"),
+        idxAnggaran=colIdx("Total Anggaran (Ajuan)");
+    if(idxJenis===-1) return null; // bukan file Excel RENJA yang dikenali
+
+    var items = [];
+    for(var r=2; r<table.rows.length; r++){
+      var cells = table.rows[r].children;
+      if(!cells.length) continue;
+      function get(i){ return i>=0 && cells[i] ? cells[i].textContent.trim() : ""; }
+      var jenis = get(idxJenis);
+      if(!jenis) continue;
+      items.push({
+        tanggalLabel: [get(idxHari), [get(idxTgl),get(idxBln)].filter(Boolean).join(" ")].filter(Boolean).join(", "),
+        jenisKegiatan: jenis,
+        tempat: get(idxTempat),
+        anggaranAjuan: parseFloat((get(idxAnggaran)||"0").replace(/[^\d.-]/g,""))||0
+      });
+    }
+    return items;
+  } finally {
+    document.body.removeChild(container);
+  }
+}
+
+document.getElementById("btnAddAgendaFiles").addEventListener("click", function(){
+  document.getElementById("agendaFileInput").click();
+});
+document.getElementById("agendaFileInput").addEventListener("change", function(e){
+  var files = Array.prototype.slice.call(e.target.files||[]);
+  files.forEach(function(f){
+    state.stagingAgendaFiles.push({
+      id: uid(), file: f, name: f.name,
+      instansiNama: f.name.replace(/\.(xls|xlsx)$/i,"").replace(/[_-]+/g," ")
+    });
+  });
+  e.target.value = "";
+  renderAgendaFileRows();
+});
+function renderAgendaFileRows(){
+  var wrap = document.getElementById("agendaFileRowsWrap");
+  wrap.innerHTML = "";
+  document.getElementById("agendaProcessAreaWrap").style.display = state.stagingAgendaFiles.length ? "block" : "none";
+  state.stagingAgendaFiles.forEach(function(sf){
+    var row = document.createElement("div");
+    row.className = "file-row";
+    row.innerHTML =
+      '<div class="ftype">🗓</div>'+
+      '<div class="fmid">'+
+        '<div class="fname">'+escapeHtml(sf.name)+'</div>'+
+        '<input type="text" placeholder="Nama instansi" value="'+escapeHtml(sf.instansiNama)+'" data-id="'+sf.id+'">'+
+      '</div>'+
+      '<button class="fdel" data-id="'+sf.id+'">✕</button>';
+    wrap.appendChild(row);
+  });
+  wrap.querySelectorAll("input[type=text]").forEach(function(inp){
+    inp.addEventListener("input", function(){
+      var sf = state.stagingAgendaFiles.find(function(x){return x.id===inp.dataset.id;});
+      if(sf) sf.instansiNama = inp.value;
+    });
+  });
+  wrap.querySelectorAll(".fdel").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      state.stagingAgendaFiles = state.stagingAgendaFiles.filter(function(x){return x.id!==btn.dataset.id;});
+      renderAgendaFileRows();
+    });
+  });
+}
+document.getElementById("btnSimpanAgendaFiles").addEventListener("click", async function(){
+  if(state.stagingAgendaFiles.some(function(sf){ return !sf.instansiNama.trim(); })){
+    toast("Isi nama instansi untuk semua file dulu"); return;
+  }
+  var btn = this; btn.disabled = true; btn.textContent = "Memproses...";
+  var okCount = 0;
+  for(var i=0;i<state.stagingAgendaFiles.length;i++){
+    var sf = state.stagingAgendaFiles[i];
+    try{
+      var text = await readFileAsText(sf.file);
+      var items = parseXlsAgendaFile(text);
+      if(!items || items.length===0){
+        toast('File "'+sf.name+'" tidak bisa dibaca sebagai Excel Ajuan Agenda'); continue;
+      }
+      state.agendaDiajukan.push({
+        id: uid(), instansiNama: sf.instansiNama.trim(), fileName: sf.name,
+        items: items, uploadedAt: Date.now()
+      });
+      okCount++;
+    }catch(err){
+      toast('Gagal membaca "'+sf.name+'": '+(err&&err.message?err.message:String(err)));
+    }
+  }
+  btn.disabled = false; btn.textContent = "Simpan Ajuan Agenda";
+  if(okCount>0){
+    state.stagingAgendaFiles = [];
+    renderAgendaFileRows();
+    save();
+    renderAgendaList();
+    toast(okCount+" ajuan agenda tersimpan");
+  }
+});
+
+function renderAgendaList(){
+  var wrap = document.getElementById("agendaListWrap");
+  if(!wrap) return;
+  wrap.innerHTML = "";
+  var sorted = state.agendaDiajukan.slice().sort(function(a,b){ return b.uploadedAt-a.uploadedAt; });
+  document.getElementById("agendaEmptyNote").style.display = sorted.length ? "none" : "block";
+  sorted.forEach(function(a){
+    var card = document.createElement("div");
+    card.className = "arsip-card";
+    card.innerHTML =
+      '<div class="atop"><span class="aperiode">'+escapeHtml(a.instansiNama)+'</span>'+
+      '<span class="adate">'+new Date(a.uploadedAt).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})+'</span></div>'+
+      '<div class="ameta">'+a.items.length+' kegiatan diajukan</div>';
+    card.addEventListener("click", function(){ openDetailAgenda(a.id); });
+    wrap.appendChild(card);
+  });
+}
+
+var detailAgendaBackdrop = document.getElementById("detailAgendaBackdrop");
+var currentDetailAgendaId = null;
+function openDetailAgenda(id){
+  var a = state.agendaDiajukan.find(function(x){ return x.id===id; });
+  if(!a) return;
+  currentDetailAgendaId = id;
+  document.getElementById("detailAgendaTitle").textContent = a.instansiNama;
+  document.getElementById("detailAgendaSub").textContent = a.items.length+" kegiatan · dari file "+a.fileName;
+  var listEl = document.getElementById("detailAgendaList");
+  listEl.innerHTML = a.items.map(function(it){
+    return '<div class="kat-item"><p class="kjudul">'+escapeHtml(it.jenisKegiatan)+' <span class="ktanggal">— '+escapeHtml(it.tanggalLabel||"-")+'</span></p>'+
+      '<p class="ktext">'+escapeHtml(it.tempat||"-")+' · Ajuan: Rp '+it.anggaranAjuan.toLocaleString("id-ID")+'</p></div>';
+  }).join("") || '<p class="empty-note">Tidak ada kegiatan terbaca dari file ini.</p>';
+  detailAgendaBackdrop.classList.add("open");
+}
+document.getElementById("btnDetailAgendaTutup").addEventListener("click", function(){ detailAgendaBackdrop.classList.remove("open"); });
+detailAgendaBackdrop.addEventListener("click", function(e){ if(e.target===this) this.classList.remove("open"); });
+document.getElementById("btnDetailAgendaHapus").addEventListener("click", async function(){
+  var ok = await showConfirm("Ajuan agenda ini akan dihapus permanen. Yakin?", "Hapus");
+  if(!ok) return;
+  state.agendaDiajukan = state.agendaDiajukan.filter(function(x){ return x.id!==currentDetailAgendaId; });
+  save();
+  detailAgendaBackdrop.classList.remove("open");
+  renderAgendaList();
+  toast("Ajuan agenda dihapus");
 });
 
 function buildMonthPicker(){
@@ -1430,6 +1647,8 @@ renderFileRows();
 renderDraft();
 renderArsipList();
 renderPutusanList();
+renderAgendaFileRows();
+renderAgendaList();
 renderSidePanel();
 
 // ================= App Lock (PIN) =================
