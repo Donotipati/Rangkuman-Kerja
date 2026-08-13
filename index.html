@@ -1384,8 +1384,14 @@ document.getElementById("fileImportAll").addEventListener("change", function(e){
   doImportAllBackup(file);
   e.target.value = "";
 });
-document.getElementById("btnExportQuick").addEventListener("click", doExportAllBackup);
-document.getElementById("btnImportQuick").addEventListener("click", function(){ document.getElementById("fileImportAll").click(); });
+document.getElementById("btnExportQuick").addEventListener("click", async function(){
+  var ok = await showConfirm("Unduh file backup semua data sekarang?", "Unduh");
+  if(ok) doExportAllBackup();
+});
+document.getElementById("btnImportQuick").addEventListener("click", async function(){
+  var ok = await showConfirm("Impor file backup? Pastikan file yang dipilih benar.", "Lanjut");
+  if(ok) document.getElementById("fileImportAll").click();
+});
 document.getElementById("btnResetAll").addEventListener("click", async function(){
   var ok = await showConfirm("Semua data (arsip rangkuman & putusan musyawarah) akan dihapus permanen dari perangkat ini. Yakin?", "Hapus Semua");
   if(!ok) return;
