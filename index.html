@@ -935,26 +935,51 @@ document.getElementById("btnProcessFiles").addEventListener("click", async funct
 // dibaca sebagai HTML. Kolom dicari berdasarkan NAMA header (bukan posisi tetap), karena jumlah
 // kolom "Pelaksana & Operasional" bisa beda-beda tergantung kategori pelaksana tiap instansi.
 function parseXlsAgendaFile(text){
+  // File Excel App1 diawali BOM (byte order mark) dan dibungkus <html><head>...<body>.
+  // Buang BOM-nya, lalu ambil cuma bagian <table>...</table> biar parsing fragment-nya bersih
+  // (langsung set innerHTML dari dokumen <html> penuh ke sebuah <div> kadang gak konsisten
+  // antar-browser/WebView).
+  text = String(text||"").replace(/^\uFEFF/, "").replace(/^\s+/, "");
+  var tableMatch = text.match(/<table[\s\S]*?<\/table>/i);
+  if(!tableMatch) return null;
+
   var container = document.createElement("div");
   container.style.cssText = "position:absolute;left:-9999px;top:-9999px;";
-  container.innerHTML = text;
+  container.innerHTML = tableMatch[0];
   document.body.appendChild(container);
   try{
     var table = container.querySelector("table");
     if(!table || table.rows.length < 3) return null;
 
-    var row1 = table.rows[0], row2 = table.rows[1];
+    function norm(s){ return String(s||"").replace(/\s+/g," ").trim(); }
+
+    // Sebelum baris header, ada baris judul & periode (colspan penuh) yang jumlahnya bisa beda-beda.
+    // Header sebenarnya selalu ditandai sel "No" dengan rowspan="2" — dicari dulu posisinya di sini,
+    // gak asumsi baris ke-0/1, biar tahan kalau App1 nambah/kurangin baris judul di atasnya nanti.
+    var headerRowIdx = -1;
+    for(var ri=0; ri<table.rows.length-1; ri++){
+      var cells0 = table.rows[ri].children;
+      for(var ci=0; ci<cells0.length; ci++){
+        if(norm(cells0[ci].textContent)==="No" && cells0[ci].getAttribute("rowspan")==="2"){
+          headerRowIdx = ri; break;
+        }
+      }
+      if(headerRowIdx>-1) break;
+    }
+    if(headerRowIdx===-1 || headerRowIdx+1>=table.rows.length) return null;
+
+    var row1 = table.rows[headerRowIdx], row2 = table.rows[headerRowIdx+1];
     var leafLabels = [];
     Array.prototype.forEach.call(row1.children, function(cell){
       var rowspan = parseInt(cell.getAttribute("rowspan")||"1", 10);
       var colspan = parseInt(cell.getAttribute("colspan")||"1", 10);
       if(rowspan>=2){
-        leafLabels.push(cell.textContent.trim());
+        leafLabels.push(norm(cell.textContent));
       } else {
         for(var i=0;i<colspan;i++){ leafLabels.push(null); }
       }
     });
-    var row2Labels = Array.prototype.map.call(row2.children, function(c){ return c.textContent.trim(); });
+    var row2Labels = Array.prototype.map.call(row2.children, function(c){ return norm(c.textContent); });
     var r2i=0;
     for(var i=0;i<leafLabels.length;i++){
       if(leafLabels[i]===null){ leafLabels[i]=row2Labels[r2i]; r2i++; }
@@ -967,10 +992,10 @@ function parseXlsAgendaFile(text){
     if(idxJenis===-1) return null; // bukan file Excel RENJA yang dikenali
 
     var items = [];
-    for(var r=2; r<table.rows.length; r++){
+    for(var r=headerRowIdx+2; r<table.rows.length; r++){
       var cells = table.rows[r].children;
       if(!cells.length) continue;
-      function get(i){ return i>=0 && cells[i] ? cells[i].textContent.trim() : ""; }
+      function get(i){ return i>=0 && cells[i] ? norm(cells[i].textContent) : ""; }
       var jenis = get(idxJenis);
       if(!jenis) continue;
       items.push({
