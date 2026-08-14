@@ -88,6 +88,9 @@
   .period-widget .plabel{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-light);font-family:"Courier New",monospace;margin:0 0 4px;}
   .period-widget .pval{font-size:17px;font-weight:700;color:var(--paper);margin:0;}
   .period-widget .psub{font-size:11px;color:#A9B4BF;margin-top:2px;}
+  .today-date-widget{text-align:center;margin-top:14px;}
+  .today-date-widget .hijri-big{font-size:21px;font-weight:700;color:var(--paper);margin:0;}
+  .today-date-widget .greg-sub{font-size:12px;color:#A9B4BF;margin:2px 0 0;}
 
   /* ---------- Upload rows ---------- */
   .file-row{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid var(--paper-line);border-radius:var(--radius);padding:11px 13px;margin-bottom:9px;}
@@ -287,6 +290,10 @@
         <button class="icon-btn" id="btnImportQuick" title="Impor backup">⬆</button>
         <button class="icon-btn" id="btnAtur" title="Pengaturan">⚙</button>
       </div>
+    </div>
+    <div class="today-date-widget">
+      <p class="hijri-big" id="todayHijriBig">—</p>
+      <p class="greg-sub" id="todayGregSub">—</p>
     </div>
     <div class="period-widget" id="periodWidget" style="display:none;">
       <p class="plabel">Bulan Rangkuman Aktif</p>
@@ -968,6 +975,14 @@ function htmlTableToGrid(table){
 
 // Cari kolom yang dibutuhkan berdasarkan NAMA header (bukan posisi tetap) — karena jumlah
 // kolom "Pelaksana & Operasional" bisa beda-beda tergantung kategori pelaksana tiap instansi.
+// Judul baris pertama Excel App1 formatnya "Nama Instansi — Rencana Kerja <Bulan>" KALAU
+// field Nama Instansi di Pengaturan App1 udah diisi (kalau belum, cuma "Rencana Kerja <Bulan>" polos).
+function detectInstansiFromAgendaGrid(grid){
+  if(!grid[0] || !grid[0][0]) return null;
+  var m = String(grid[0][0]).match(/^(.+?)\s*[—–-]\s*Rencana Kerja\s+/i);
+  return m ? m[1].trim() : null;
+}
+
 function extractAgendaItemsFromGrid(grid){
   function findColInRow(rowIdx, label){
     if(!grid[rowIdx]) return -1;
@@ -1020,7 +1035,7 @@ async function parseXlsAgendaFile(file){
     var wb = XLSX.read(buf, {type:"array"});
     var sheet = wb.Sheets[wb.SheetNames[0]];
     var grid = XLSX.utils.sheet_to_json(sheet, {header:1, defval:"", raw:false});
-    return extractAgendaItemsFromGrid(grid);
+    return { items: extractAgendaItemsFromGrid(grid), instansiTerdeteksi: detectInstansiFromAgendaGrid(grid) };
   }
 
   var text = new TextDecoder("utf-8").decode(buf).replace(/^\uFEFF/, "").replace(/^\s+/, "");
@@ -1034,7 +1049,7 @@ async function parseXlsAgendaFile(file){
     var table = container.querySelector("table");
     if(!table) return null;
     var grid2 = htmlTableToGrid(table);
-    return extractAgendaItemsFromGrid(grid2);
+    return { items: extractAgendaItemsFromGrid(grid2), instansiTerdeteksi: detectInstansiFromAgendaGrid(grid2) };
   } finally {
     document.body.removeChild(container);
   }
@@ -1047,9 +1062,26 @@ document.getElementById("btnAddAgendaFiles").addEventListener("click", function(
 document.getElementById("agendaFileInput").addEventListener("change", function(e){
   var files = Array.prototype.slice.call(e.target.files||[]);
   files.forEach(function(f){
-    state.stagingAgendaFiles.push({
+    var sf = {
       id: uid(), file: f, name: f.name,
-      instansiNama: f.name.replace(/\.(xls|xlsx)$/i,"").replace(/[_-]+/g," ")
+      instansiNama: f.name.replace(/\.(xls|xlsx)$/i,"").replace(/[_-]+/g," "),
+      userEditedName: false, status: "pending", parsedItems: null
+    };
+    state.stagingAgendaFiles.push(sf);
+    parseXlsAgendaFile(f).then(function(result){
+      if(!result || !result.items || result.items.length===0){
+        sf.status = "fail";
+      } else {
+        sf.parsedItems = result.items;
+        sf.status = "ok";
+        if(result.instansiTerdeteksi && !sf.userEditedName){
+          sf.instansiNama = result.instansiTerdeteksi;
+        }
+      }
+      renderAgendaFileRows();
+    }).catch(function(){
+      sf.status = "fail";
+      renderAgendaFileRows();
     });
   });
   e.target.value = "";
@@ -1060,6 +1092,10 @@ function renderAgendaFileRows(){
   wrap.innerHTML = "";
   document.getElementById("agendaProcessAreaWrap").style.display = state.stagingAgendaFiles.length ? "block" : "none";
   state.stagingAgendaFiles.forEach(function(sf){
+    var statusHtml = "";
+    if(sf.status==="pending") statusHtml = '<span class="fstatus pending">○ Membaca...</span>';
+    else if(sf.status==="ok") statusHtml = '<span class="fstatus ok">✓ Terbaca '+sf.parsedItems.length+' kegiatan</span>';
+    else statusHtml = '<span class="fstatus fail">✕ Gagal dibaca</span>';
     var row = document.createElement("div");
     row.className = "file-row";
     row.innerHTML =
@@ -1067,6 +1103,7 @@ function renderAgendaFileRows(){
       '<div class="fmid">'+
         '<div class="fname">'+escapeHtml(sf.name)+'</div>'+
         '<input type="text" placeholder="Nama instansi" value="'+escapeHtml(sf.instansiNama)+'" data-id="'+sf.id+'">'+
+        statusHtml+
       '</div>'+
       '<button class="fdel" data-id="'+sf.id+'">✕</button>';
     wrap.appendChild(row);
@@ -1074,7 +1111,7 @@ function renderAgendaFileRows(){
   wrap.querySelectorAll("input[type=text]").forEach(function(inp){
     inp.addEventListener("input", function(){
       var sf = state.stagingAgendaFiles.find(function(x){return x.id===inp.dataset.id;});
-      if(sf) sf.instansiNama = inp.value;
+      if(sf){ sf.instansiNama = inp.value; sf.userEditedName = true; }
     });
   });
   wrap.querySelectorAll(".fdel").forEach(function(btn){
@@ -1088,25 +1125,20 @@ document.getElementById("btnSimpanAgendaFiles").addEventListener("click", async 
   if(state.stagingAgendaFiles.some(function(sf){ return !sf.instansiNama.trim(); })){
     toast("Isi nama instansi untuk semua file dulu"); return;
   }
-  var btn = this; btn.disabled = true; btn.textContent = "Memproses...";
-  var okCount = 0;
-  for(var i=0;i<state.stagingAgendaFiles.length;i++){
-    var sf = state.stagingAgendaFiles[i];
-    try{
-      var items = await parseXlsAgendaFile(sf.file);
-      if(!items || items.length===0){
-        toast('File "'+sf.name+'" tidak bisa dibaca sebagai Excel Ajuan Agenda'); continue;
-      }
-      state.agendaDiajukan.push({
-        id: uid(), instansiNama: sf.instansiNama.trim(), fileName: sf.name,
-        items: items, uploadedAt: Date.now()
-      });
-      okCount++;
-    }catch(err){
-      toast('Gagal membaca "'+sf.name+'": '+(err&&err.message?err.message:String(err)));
-    }
+  if(state.stagingAgendaFiles.some(function(sf){ return sf.status==="pending"; })){
+    toast("Tunggu semua file selesai dibaca dulu"); return;
   }
-  btn.disabled = false; btn.textContent = "Simpan Ajuan Agenda";
+  var okCount = 0;
+  state.stagingAgendaFiles.forEach(function(sf){
+    if(sf.status!=="ok" || !sf.parsedItems){
+      toast('File "'+sf.name+'" tidak bisa dibaca sebagai Excel Ajuan Agenda, dilewati'); return;
+    }
+    state.agendaDiajukan.push({
+      id: uid(), instansiNama: sf.instansiNama.trim(), fileName: sf.name,
+      items: sf.parsedItems, uploadedAt: Date.now()
+    });
+    okCount++;
+  });
   if(okCount>0){
     state.stagingAgendaFiles = [];
     renderAgendaFileRows();
@@ -1116,6 +1148,9 @@ document.getElementById("btnSimpanAgendaFiles").addEventListener("click", async 
   }
 });
 
+function totalAnggaranAgenda(a){
+  return a.items.reduce(function(s,it){ return s+(it.anggaranAjuan||0); }, 0);
+}
 function renderAgendaList(){
   var wrap = document.getElementById("agendaListWrap");
   if(!wrap) return;
@@ -1128,7 +1163,7 @@ function renderAgendaList(){
     card.innerHTML =
       '<div class="atop"><span class="aperiode">'+escapeHtml(a.instansiNama)+'</span>'+
       '<span class="adate">'+new Date(a.uploadedAt).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})+'</span></div>'+
-      '<div class="ameta">'+a.items.length+' kegiatan diajukan</div>';
+      '<div class="ameta">'+a.items.length+' kegiatan diajukan · Total Ajuan: Rp '+totalAnggaranAgenda(a).toLocaleString("id-ID")+'</div>';
     card.addEventListener("click", function(){ openDetailAgenda(a.id); });
     wrap.appendChild(card);
   });
@@ -1141,7 +1176,7 @@ function openDetailAgenda(id){
   if(!a) return;
   currentDetailAgendaId = id;
   document.getElementById("detailAgendaTitle").textContent = a.instansiNama;
-  document.getElementById("detailAgendaSub").textContent = a.items.length+" kegiatan · dari file "+a.fileName;
+  document.getElementById("detailAgendaSub").textContent = a.items.length+" kegiatan · Total Ajuan: Rp "+totalAnggaranAgenda(a).toLocaleString("id-ID")+" · dari file "+a.fileName;
   var listEl = document.getElementById("detailAgendaList");
   listEl.innerHTML = a.items.map(function(it){
     return '<div class="kat-item"><p class="kjudul">'+escapeHtml(it.jenisKegiatan)+' <span class="ktanggal">— '+escapeHtml(it.tanggalLabel||"-")+'</span></p>'+
@@ -1618,9 +1653,18 @@ document.getElementById("btnDetailPutusanHapus").addEventListener("click", async
 });
 
 // ================= Pengaturan =================
+function renderTodayDateWidget(){
+  var now = new Date();
+  var h = dateToHijri(now);
+  var elH = document.getElementById("todayHijriBig");
+  var elG = document.getElementById("todayGregSub");
+  if(elH) elH.textContent = h.day+" "+HIJRI_MONTHS[h.month-1]+" "+h.year+" H";
+  if(elG) elG.textContent = now.getDate()+" "+MONTHS[now.getMonth()]+" "+now.getFullYear()+" M";
+}
 document.getElementById("setHijriOffset").addEventListener("change", function(){
   state.settings.hijriOffset = parseInt(this.value,10)||0;
   save();
+  renderTodayDateWidget();
   toast("Koreksi tanggal Hijriah disimpan");
 });
 
@@ -1703,6 +1747,7 @@ renderArsipList();
 renderPutusanList();
 renderAgendaFileRows();
 renderAgendaList();
+renderTodayDateWidget();
 renderSidePanel();
 
 // ================= App Lock (PIN) =================
