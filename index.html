@@ -531,6 +531,7 @@
 
 <script src="native-files.js"></script>
 <script src="mammoth.browser.min.js"></script>
+<script src="xlsx.full.min.js"></script>
 <script>
 // ================= Konstanta & util dasar =================
 var HIJRI_MONTHS = ["Muharram","Safar","Rabiul Awal","Rabiul Akhir","Jumadil Awal","Jumadil Akhir","Rajab","Sya'ban","Ramadhan","Syawal","Dzulqa'dah","Dzulhijjah"];
@@ -934,82 +935,111 @@ document.getElementById("btnProcessFiles").addEventListener("click", async funct
 // Excel App1 sebenarnya tabel HTML berlabel .xls (bukan file biner Excel asli), jadi cukup
 // dibaca sebagai HTML. Kolom dicari berdasarkan NAMA header (bukan posisi tetap), karena jumlah
 // kolom "Pelaksana & Operasional" bisa beda-beda tergantung kategori pelaksana tiap instansi.
-function parseXlsAgendaFile(text){
-  // File Excel App1 diawali BOM (byte order mark) dan dibungkus <html><head>...<body>.
-  // Buang BOM-nya, lalu ambil cuma bagian <table>...</table> biar parsing fragment-nya bersih
-  // (langsung set innerHTML dari dokumen <html> penuh ke sebuah <div> kadang gak konsisten
-  // antar-browser/WebView).
-  text = String(text||"").replace(/^\uFEFF/, "").replace(/^\s+/, "");
+function norm(s){ return String(s==null?"":s).replace(/\s+/g," ").trim(); }
+
+// Ubah <table> HTML (dengan rowspan/colspan) jadi grid 2D biasa (array of array), selebar
+// kolom aslinya — setara dengan hasil XLSX.utils.sheet_to_json, biar downstream logic-nya
+// (extractAgendaItemsFromGrid) sama persis buat dua sumber format.
+function htmlTableToGrid(table){
+  var grid = [];
+  var rowspanTracker = {}; // kolIndex -> {value, remaining}
+  for(var r=0;r<table.rows.length;r++){
+    var row = [];
+    var cells = table.rows[r].children;
+    var colPtr = 0, ci = 0;
+    while(ci < cells.length){
+      while(rowspanTracker[colPtr] && rowspanTracker[colPtr].remaining>0){
+        row[colPtr] = rowspanTracker[colPtr].value;
+        rowspanTracker[colPtr].remaining--;
+        colPtr++;
+      }
+      var cell = cells[ci];
+      var colspan = parseInt(cell.getAttribute("colspan")||"1", 10);
+      var rowspan = parseInt(cell.getAttribute("rowspan")||"1", 10);
+      var text = norm(cell.textContent);
+      for(var k=0;k<colspan;k++){ row[colPtr+k] = (k===0) ? text : ""; }
+      if(rowspan>1){ rowspanTracker[colPtr] = {value:text, remaining: rowspan-1}; }
+      colPtr += colspan; ci++;
+    }
+    grid.push(row);
+  }
+  return grid;
+}
+
+// Cari kolom yang dibutuhkan berdasarkan NAMA header (bukan posisi tetap) — karena jumlah
+// kolom "Pelaksana & Operasional" bisa beda-beda tergantung kategori pelaksana tiap instansi.
+function extractAgendaItemsFromGrid(grid){
+  function findColInRow(rowIdx, label){
+    if(!grid[rowIdx]) return -1;
+    for(var c=0;c<grid[rowIdx].length;c++){ if(norm(grid[rowIdx][c])===label) return c; }
+    return -1;
+  }
+  var headerRowIdx = -1;
+  for(var r=0;r<grid.length;r++){
+    if(findColInRow(r,"Jenis Kegiatan")>-1){ headerRowIdx=r; break; }
+  }
+  if(headerRowIdx===-1) return null;
+
+  var idxJenis = findColInRow(headerRowIdx,"Jenis Kegiatan");
+  var idxTempat = findColInRow(headerRowIdx,"Tempat");
+  var idxAnggaran = findColInRow(headerRowIdx,"Total Anggaran (Ajuan)");
+  var subRowIdx = headerRowIdx+1;
+  var idxHari = findColInRow(subRowIdx,"Hari");
+  var idxTgl = findColInRow(subRowIdx,"Tgl");
+  var idxBln = findColInRow(subRowIdx,"Bln");
+
+  var items = [];
+  for(var rr=subRowIdx+1; rr<grid.length; rr++){
+    var row = grid[rr]||[];
+    function get(i){ return i>=0 && row[i]!=null ? norm(row[i]) : ""; }
+    var jenis = get(idxJenis);
+    if(!jenis) continue;
+    items.push({
+      tanggalLabel: [get(idxHari), [get(idxTgl),get(idxBln)].filter(Boolean).join(" ")].filter(Boolean).join(", "),
+      jenisKegiatan: jenis,
+      tempat: get(idxTempat),
+      anggaranAjuan: parseFloat((get(idxAnggaran)||"0").replace(/[^\d.-]/g,""))||0
+    });
+  }
+  return items;
+}
+
+// File "Excel" App1 aslinya tabel HTML berlabel .xls. Tapi kalau file itu sempat kebuka &
+// otomatis tersave ulang lewat aplikasi kayak WPS Office / Excel di HP, dia berubah jadi file
+// Excel BINER beneran (format OLE2 lama .xls atau ZIP .xlsx) — beda total strukturnya, gak bisa
+// dibaca sebagai teks/HTML lagi. Di sini kita deteksi dulu jenis filenya dari byte pembukanya,
+// baru pilih cara baca yang sesuai — jadi dua-duanya didukung.
+async function parseXlsAgendaFile(file){
+  var buf = await readFileAsArrayBuffer(file);
+  var bytes = new Uint8Array(buf.slice(0,4));
+  var isOle = bytes[0]===0xD0 && bytes[1]===0xCF && bytes[2]===0x11 && bytes[3]===0xE0; // .xls biner lama
+  var isZip = bytes[0]===0x50 && bytes[1]===0x4B; // .xlsx (format zip modern)
+
+  if(isOle || isZip){
+    if(typeof XLSX === "undefined") return null;
+    var wb = XLSX.read(buf, {type:"array"});
+    var sheet = wb.Sheets[wb.SheetNames[0]];
+    var grid = XLSX.utils.sheet_to_json(sheet, {header:1, defval:"", raw:false});
+    return extractAgendaItemsFromGrid(grid);
+  }
+
+  var text = new TextDecoder("utf-8").decode(buf).replace(/^\uFEFF/, "").replace(/^\s+/, "");
   var tableMatch = text.match(/<table[\s\S]*?<\/table>/i);
   if(!tableMatch) return null;
-
   var container = document.createElement("div");
   container.style.cssText = "position:absolute;left:-9999px;top:-9999px;";
   container.innerHTML = tableMatch[0];
   document.body.appendChild(container);
   try{
     var table = container.querySelector("table");
-    if(!table || table.rows.length < 3) return null;
-
-    function norm(s){ return String(s||"").replace(/\s+/g," ").trim(); }
-
-    // Sebelum baris header, ada baris judul & periode (colspan penuh) yang jumlahnya bisa beda-beda.
-    // Header sebenarnya selalu ditandai sel "No" dengan rowspan="2" — dicari dulu posisinya di sini,
-    // gak asumsi baris ke-0/1, biar tahan kalau App1 nambah/kurangin baris judul di atasnya nanti.
-    var headerRowIdx = -1;
-    for(var ri=0; ri<table.rows.length-1; ri++){
-      var cells0 = table.rows[ri].children;
-      for(var ci=0; ci<cells0.length; ci++){
-        if(norm(cells0[ci].textContent)==="No" && cells0[ci].getAttribute("rowspan")==="2"){
-          headerRowIdx = ri; break;
-        }
-      }
-      if(headerRowIdx>-1) break;
-    }
-    if(headerRowIdx===-1 || headerRowIdx+1>=table.rows.length) return null;
-
-    var row1 = table.rows[headerRowIdx], row2 = table.rows[headerRowIdx+1];
-    var leafLabels = [];
-    Array.prototype.forEach.call(row1.children, function(cell){
-      var rowspan = parseInt(cell.getAttribute("rowspan")||"1", 10);
-      var colspan = parseInt(cell.getAttribute("colspan")||"1", 10);
-      if(rowspan>=2){
-        leafLabels.push(norm(cell.textContent));
-      } else {
-        for(var i=0;i<colspan;i++){ leafLabels.push(null); }
-      }
-    });
-    var row2Labels = Array.prototype.map.call(row2.children, function(c){ return norm(c.textContent); });
-    var r2i=0;
-    for(var i=0;i<leafLabels.length;i++){
-      if(leafLabels[i]===null){ leafLabels[i]=row2Labels[r2i]; r2i++; }
-    }
-
-    function colIdx(name){ return leafLabels.indexOf(name); }
-    var idxHari=colIdx("Hari"), idxTgl=colIdx("Tgl"), idxBln=colIdx("Bln"),
-        idxJenis=colIdx("Jenis Kegiatan"), idxTempat=colIdx("Tempat"),
-        idxAnggaran=colIdx("Total Anggaran (Ajuan)");
-    if(idxJenis===-1) return null; // bukan file Excel RENJA yang dikenali
-
-    var items = [];
-    for(var r=headerRowIdx+2; r<table.rows.length; r++){
-      var cells = table.rows[r].children;
-      if(!cells.length) continue;
-      function get(i){ return i>=0 && cells[i] ? norm(cells[i].textContent) : ""; }
-      var jenis = get(idxJenis);
-      if(!jenis) continue;
-      items.push({
-        tanggalLabel: [get(idxHari), [get(idxTgl),get(idxBln)].filter(Boolean).join(" ")].filter(Boolean).join(", "),
-        jenisKegiatan: jenis,
-        tempat: get(idxTempat),
-        anggaranAjuan: parseFloat((get(idxAnggaran)||"0").replace(/[^\d.-]/g,""))||0
-      });
-    }
-    return items;
+    if(!table) return null;
+    var grid2 = htmlTableToGrid(table);
+    return extractAgendaItemsFromGrid(grid2);
   } finally {
     document.body.removeChild(container);
   }
 }
+
 
 document.getElementById("btnAddAgendaFiles").addEventListener("click", function(){
   document.getElementById("agendaFileInput").click();
@@ -1063,8 +1093,7 @@ document.getElementById("btnSimpanAgendaFiles").addEventListener("click", async 
   for(var i=0;i<state.stagingAgendaFiles.length;i++){
     var sf = state.stagingAgendaFiles[i];
     try{
-      var text = await readFileAsText(sf.file);
-      var items = parseXlsAgendaFile(text);
+      var items = await parseXlsAgendaFile(sf.file);
       if(!items || items.length===0){
         toast('File "'+sf.name+'" tidak bisa dibaca sebagai Excel Ajuan Agenda'); continue;
       }
