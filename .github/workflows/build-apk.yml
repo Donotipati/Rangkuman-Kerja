@@ -40,6 +40,7 @@ jobs:
           cp sw.js www/sw.js
           cp native-files.js www/native-files.js
           cp mammoth.browser.min.js www/mammoth.browser.min.js
+          cp xlsx.full.min.js www/xlsx.full.min.js
 
           if [ -d icons ]; then
             cp -r icons www/icons
