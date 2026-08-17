@@ -1516,9 +1516,44 @@ function openDetailArsip(id){
   entry.instansiList.forEach(function(ins){
     body += '<div class="instansi-card"><div class="instansi-head"><div><div class="iname">'+escapeHtml(ins.nama)+'</div><div class="icount">'+ins.items.length+' kegiatan</div></div></div><div class="instansi-body">'+instansiBodyHtml(ins)+'</div></div>';
   });
-  body += '<div class="section-title">Catatan Koordinator</div><div class="info-card"><p>'+(entry.catatanKoordinator?escapeHtml(entry.catatanKoordinator).replace(/\n/g,"<br>"):"<em>(tidak ada catatan)</em>")+'</p></div>';
+  body += '<div class="section-title">Catatan Koordinator</div>'+
+    '<div id="detailArsipCatatanView">'+
+      '<div class="info-card"><p id="detailArsipCatatanText">'+(entry.catatanKoordinator?escapeHtml(entry.catatanKoordinator).replace(/\n/g,"<br>"):"<em>(tidak ada catatan)</em>")+'</p></div>'+
+      '<button class="btn-small" id="btnEditCatatanArsip" style="width:100%;">✎ Edit Catatan (perlu PIN)</button>'+
+    '</div>'+
+    '<div id="detailArsipCatatanEditWrap" style="display:none;">'+
+      '<div class="field"><textarea id="detailArsipCatatanInput" style="min-height:100px;">'+escapeHtml(entry.catatanKoordinator||"")+'</textarea></div>'+
+      '<div class="btn-row">'+
+        '<button class="btn btn-ghost" id="btnCatatanArsipBatal">Batal</button>'+
+        '<button class="btn btn-primary" id="btnCatatanArsipSimpan">Simpan Catatan</button>'+
+      '</div>'+
+    '</div>';
   document.getElementById("detailArsipBody").innerHTML = body;
   detailArsipBackdrop.classList.add("open");
+
+  document.getElementById("btnEditCatatanArsip").addEventListener("click", function(){
+    requireOwnerPinThen(function(){
+      document.getElementById("detailArsipCatatanView").style.display = "none";
+      document.getElementById("detailArsipCatatanEditWrap").style.display = "block";
+      document.getElementById("detailArsipCatatanInput").focus();
+    });
+  });
+  document.getElementById("btnCatatanArsipBatal").addEventListener("click", function(){
+    document.getElementById("detailArsipCatatanEditWrap").style.display = "none";
+    document.getElementById("detailArsipCatatanView").style.display = "block";
+  });
+  document.getElementById("btnCatatanArsipSimpan").addEventListener("click", function(){
+    var v = document.getElementById("detailArsipCatatanInput").value;
+    var e = state.arsipRangkuman.find(function(x){ return x.id===currentDetailArsipId; });
+    if(e){
+      e.catatanKoordinator = v;
+      save();
+      document.getElementById("detailArsipCatatanText").innerHTML = v ? escapeHtml(v).replace(/\n/g,"<br>") : "<em>(tidak ada catatan)</em>";
+      toast("Catatan Koordinator diperbarui");
+    }
+    document.getElementById("detailArsipCatatanEditWrap").style.display = "none";
+    document.getElementById("detailArsipCatatanView").style.display = "block";
+  });
 }
 document.getElementById("btnDetailArsipTutup").addEventListener("click", function(){ detailArsipBackdrop.classList.remove("open"); });
 detailArsipBackdrop.addEventListener("click", function(e){ if(e.target===this) this.classList.remove("open"); });
@@ -1760,6 +1795,14 @@ async function sha256Hex(str){
 }
 
 var lockState = { mode: "unlock", step: 1, firstPin: "" };
+var lockVerifyCallback = null;
+// Minta verifikasi PIN dulu sebelum aksi sensitif (misal edit Catatan Koordinator di Arsip
+// yang udah difinalisasi). Kalau PIN belum diaktifkan sama sekali, langsung jalan tanpa gerbang.
+function requireOwnerPinThen(callback){
+  if(!state.settings.pinEnabled || !state.settings.pinHash){ callback(); return; }
+  lockVerifyCallback = callback;
+  showLockOverlay("unlock");
+}
 
 function showLockOverlay(mode){
   lockState.mode = mode; lockState.step = 1; lockState.firstPin = "";
@@ -1786,7 +1829,10 @@ async function handlePinComplete(pin){
   var input = document.getElementById("lockPinInput");
   if(lockState.mode==="unlock"){
     var h = await sha256Hex(pin);
-    if(h === state.settings.pinHash){ hideLockOverlay(); }
+    if(h === state.settings.pinHash){
+      hideLockOverlay();
+      if(lockVerifyCallback){ var cb=lockVerifyCallback; lockVerifyCallback=null; cb(); }
+    }
     else{ document.getElementById("lockError").textContent = "PIN salah, coba lagi"; input.value=""; }
   } else if(lockState.mode==="create"){
     if(lockState.step===1){
