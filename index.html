@@ -724,6 +724,16 @@ function extractLabelValue(lines, fromIdx, toIdx, labelPattern){
 // pas dibagikan/didownload ulang) — beda TOTAL dari file .docx biner asli yang dibaca mammoth.
 // Di sini kita ubah HTML itu jadi teks datar dengan baris per paragraf, setara keluaran mammoth,
 // biar bisa lewat parseFromDocxText yang sama persis.
+// File "Word/Excel App1" yang HTML-nya di-nyamar-in bisa punya encoding beda-beda tergantung
+// aplikasi apa yang terakhir nyimpen ulang filenya: UTF-8 polos (asli App1), UTF-8 dgn BOM, atau
+// UTF-16 (kalau sempat dibuka/disave lewat Microsoft Word beneran). Deteksi dari BOM di byte awal.
+function decodeArrayBufferSmart(buf){
+  var bytes = new Uint8Array(buf);
+  if(bytes[0]===0xFF && bytes[1]===0xFE) return new TextDecoder("utf-16le").decode(buf);
+  if(bytes[0]===0xFE && bytes[1]===0xFF) return new TextDecoder("utf-16be").decode(buf);
+  return new TextDecoder("utf-8").decode(buf); // BOM UTF-8 (EF BB BF) otomatis kebuang sama TextDecoder
+}
+
 function htmlDocToPlainTextLines(html){
   var withBreaks = html.replace(/<\/(p|div|tr|td|th|h1|h2|h3|h4|h5|h6|li)>/gi, "</$1>\n").replace(/<br\s*\/?>/gi, "\n");
   var container = document.createElement("div");
@@ -951,7 +961,7 @@ document.getElementById("btnProcessFiles").addEventListener("click", async funct
           var result = await mammoth.extractRawText({arrayBuffer: buf});
           rawTextVal = result.value || "";
         } else {
-          var htmlText = new TextDecoder("utf-8").decode(buf).replace(/^\uFEFF/, "");
+          var htmlText = decodeArrayBufferSmart(buf).replace(/^\uFEFF/, "");
           rawTextVal = htmlDocToPlainTextLines(htmlText);
         }
         var parsed = parseFromDocxText(rawTextVal);
@@ -1084,7 +1094,7 @@ async function parseXlsAgendaFile(file){
     return { items: extractAgendaItemsFromGrid(grid), instansiTerdeteksi: detectInstansiFromAgendaGrid(grid), periode: detectPeriodeFromAgendaGrid(grid) };
   }
 
-  var text = new TextDecoder("utf-8").decode(buf).replace(/^\uFEFF/, "").replace(/^\s+/, "");
+  var text = decodeArrayBufferSmart(buf).replace(/^\uFEFF/, "").replace(/^\s+/, "");
   var tableMatch = text.match(/<table[\s\S]*?<\/table>/i);
   if(!tableMatch) return null;
   var container = document.createElement("div");
@@ -1198,6 +1208,23 @@ document.getElementById("btnSimpanAgendaFiles").addEventListener("click", async 
 function totalAnggaranAgenda(a){
   return a.items.reduce(function(s,it){ return s+(it.anggaranAjuan||0); }, 0);
 }
+// Data lama (diupload sebelum fitur pengelompokan periode ada) gak punya field "periode" sama
+// sekali. Buat itu, coba tebak nama bulan Hijriah dari tanggalLabel kegiatan pertamanya (mis.
+// "Kam, 1 Rabiul Awal") — gak ada tahunnya, tapi cukup buat pengelompokan kasar daripada nyasar
+// ke "Periode Tidak Diketahui" semua.
+function deriveFallbackPeriode(a){
+  if(a.periode) return a.periode;
+  for(var i=0;i<(a.items||[]).length;i++){
+    var label = a.items[i].tanggalLabel||"";
+    for(var m=0;m<HIJRI_MONTHS.length;m++){
+      if(label.indexOf(HIJRI_MONTHS[m])>-1){
+        return { label: HIJRI_MONTHS[m]+" (tahun tidak diketahui)", hijriYear: 0, hijriMonth: m+1 };
+      }
+    }
+  }
+  return null;
+}
+
 function renderAgendaList(){
   var wrap = document.getElementById("agendaListWrap");
   if(!wrap) return;
@@ -1205,12 +1232,14 @@ function renderAgendaList(){
   var sorted = state.agendaDiajukan.slice().sort(function(a,b){ return b.uploadedAt-a.uploadedAt; });
   document.getElementById("agendaEmptyNote").style.display = sorted.length ? "none" : "block";
 
-  // Kelompokkan per bulan ajuan (dari judul file Excel-nya). File yang periodenya gak
-  // kedeteksi (misal format lama/gak dikenali) masuk grup "Periode Tidak Diketahui" di paling bawah.
+  // Kelompokkan per bulan ajuan (dari judul file Excel-nya, atau ditebak dari tanggalLabel kalau
+  // file lama gak punya field periode). Yang beneran gak kedeteksi sama sekali baru masuk
+  // "Periode Tidak Diketahui" di paling bawah.
   var groups = {}; // key -> {label, hijriYear, hijriMonth, entries:[]}
   sorted.forEach(function(a){
-    var key = a.periode ? "H-"+a.periode.hijriYear+"-"+a.periode.hijriMonth : "unknown";
-    if(!groups[key]) groups[key] = { label: a.periode ? a.periode.label : "Periode Tidak Diketahui", periode: a.periode, entries: [] };
+    var periode = deriveFallbackPeriode(a);
+    var key = periode ? "H-"+periode.hijriYear+"-"+periode.hijriMonth : "unknown";
+    if(!groups[key]) groups[key] = { label: periode ? periode.label : "Periode Tidak Diketahui", periode: periode, entries: [] };
     groups[key].entries.push(a);
   });
   var groupKeys = Object.keys(groups).sort(function(k1,k2){
@@ -1795,7 +1824,7 @@ document.getElementById("setHijriOffset").addEventListener("change", function(){
 });
 
 function doExportAllBackup(){
-  var blob = new Blob([JSON.stringify({settings:state.settings, arsipRangkuman:state.arsipRangkuman, arsipMusyawarah:state.arsipMusyawarah}, null, 2)], {type:"application/json"});
+  var blob = new Blob([JSON.stringify({settings:state.settings, arsipRangkuman:state.arsipRangkuman, arsipMusyawarah:state.arsipMusyawarah, agendaDiajukan:state.agendaDiajukan}, null, 2)], {type:"application/json"});
   var filename = "backup-rangkuman-"+todayISO()+".json";
   (window.AgendaFiles ? window.AgendaFiles.saveOrShareBlob(filename, blob) : Promise.resolve()).then(function(){
     toast("Backup data diekspor");
@@ -1811,8 +1840,10 @@ function doImportAllBackup(file){
       (data.arsipRangkuman||[]).forEach(function(x){ if(x&&x.id&&!existingIds.has(x.id)){ state.arsipRangkuman.push(x); added++; } });
       var existingPutusanIds = new Set(state.arsipMusyawarah.map(function(x){return x.id;}));
       (data.arsipMusyawarah||[]).forEach(function(x){ if(x&&x.id&&!existingPutusanIds.has(x.id)){ state.arsipMusyawarah.push(x); } });
+      var existingAgendaIds = new Set(state.agendaDiajukan.map(function(x){return x.id;}));
+      (data.agendaDiajukan||[]).forEach(function(x){ if(x&&x.id&&!existingAgendaIds.has(x.id)){ state.agendaDiajukan.push(x); } });
       if(data.settings) state.settings = Object.assign({}, state.settings, data.settings);
-      save(); renderArsipList(); renderPutusanList();
+      save(); renderArsipList(); renderPutusanList(); renderAgendaList();
       toast(added+" rangkuman diimpor");
     }catch(err){ toast("Gagal membaca file backup"); }
   };
