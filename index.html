@@ -228,6 +228,7 @@
   }
 
   /* ---------- Desktop sidebar (layar lebar, PC) ---------- */
+  .sidebar-footer{display:none;}
   @media (min-width:1100px){
     body{padding-left:236px;justify-content:center;}
     .app{padding-bottom:24px;box-shadow:none;}
@@ -251,6 +252,12 @@
       font-size:15px;font-weight:700;letter-spacing:0.5px;
       color:var(--paper);border-bottom:1px solid rgba(255,255,255,0.08);
     }
+    .sidebar-footer{
+      display:block;margin-top:auto;padding:16px 28px 22px;
+      border-top:1px solid rgba(255,255,255,0.08);
+    }
+    .sidebar-footer .sf-clock{font-family:"Courier New",ui-monospace,monospace;font-size:26px;font-weight:700;color:var(--paper);letter-spacing:1px;}
+    .sidebar-footer .sf-date{font-size:11.5px;color:#8A95A0;margin-top:4px;line-height:1.5;}
   }
 
   /* ---------- Panel info kanan (layar sangat lebar) ---------- */
@@ -458,6 +465,10 @@
     <button class="nav-btn" data-tab="arsip"><span class="ic">🗄</span>Arsip</button>
     <button class="nav-btn" data-tab="musyawarah"><span class="ic">🗳</span>Musyawarah</button>
     <button class="nav-btn" data-tab="atur"><span class="ic">⚙</span>Atur</button>
+    <div class="sidebar-footer" id="sidebarFooter">
+      <div class="sf-clock" id="sfClock">00:00:00</div>
+      <div class="sf-date" id="sfDate">—</div>
+    </div>
   </div>
 
   <!-- ============ SHEET: Detail Arsip ============ -->
@@ -709,6 +720,21 @@ function extractLabelValue(lines, fromIdx, toIdx, labelPattern){
 }
 
 // ================= Parser DOCX best-effort (baca ulang template Word Aplikasi 1) =================
+// File Word App1 sebenarnya HTML berlabel .doc (tapi kadang ke-rename/tersimpan jadi .docx
+// pas dibagikan/didownload ulang) — beda TOTAL dari file .docx biner asli yang dibaca mammoth.
+// Di sini kita ubah HTML itu jadi teks datar dengan baris per paragraf, setara keluaran mammoth,
+// biar bisa lewat parseFromDocxText yang sama persis.
+function htmlDocToPlainTextLines(html){
+  var withBreaks = html.replace(/<\/(p|div|tr|td|th|h1|h2|h3|h4|h5|h6|li)>/gi, "</$1>\n").replace(/<br\s*\/?>/gi, "\n");
+  var container = document.createElement("div");
+  container.style.cssText = "position:absolute;left:-9999px;top:-9999px;";
+  container.innerHTML = withBreaks;
+  document.body.appendChild(container);
+  var text = container.textContent || "";
+  document.body.removeChild(container);
+  return text;
+}
+
 function parseFromDocxText(rawText){
   var lines = rawText.split(/\r?\n/).map(function(l){ return l.trim(); }).filter(function(l){ return l.length>0; });
   var tanggalIdx = [];
@@ -918,13 +944,22 @@ document.getElementById("btnProcessFiles").addEventListener("click", async funct
         }
       } else {
         var buf = await readFileAsArrayBuffer(sf.file);
-        var result = await mammoth.extractRawText({arrayBuffer: buf});
-        var parsed = parseFromDocxText(result.value || "");
+        var fileBytes = new Uint8Array(buf.slice(0,2));
+        var isRealDocx = fileBytes[0]===0x50 && fileBytes[1]===0x4B; // PK = zip/OOXML asli
+        var rawTextVal;
+        if(isRealDocx){
+          var result = await mammoth.extractRawText({arrayBuffer: buf});
+          rawTextVal = result.value || "";
+        } else {
+          var htmlText = new TextDecoder("utf-8").decode(buf).replace(/^\uFEFF/, "");
+          rawTextVal = htmlDocToPlainTextLines(htmlText);
+        }
+        var parsed = parseFromDocxText(rawTextVal);
         sf.items = parsed.items;
         sf.warnings = parsed.warnings;
         sf.status = parsed.items.length===0 ? "fail" : (parsed.warnings.length ? "warn" : "ok");
         if(!sf.userEditedName){
-          var detectedDocx = detectInstansiNameFromDocx(result.value || "");
+          var detectedDocx = detectInstansiNameFromDocx(rawTextVal);
           if(detectedDocx) sf.instansiNama = detectedDocx;
         }
       }
@@ -982,6 +1017,17 @@ function detectInstansiFromAgendaGrid(grid){
   var m = String(grid[0][0]).match(/^(.+?)\s*[—–-]\s*Rencana Kerja\s+/i);
   return m ? m[1].trim() : null;
 }
+// Judul baris pertama juga selalu diakhiri "Rencana Kerja <Bulan> <Tahun> H" — dipakai buat
+// ngelompokin Agenda Diajukan di Arsip per bulan ajuan, dan buat urutin sort-nya (tahun+bulan numerik).
+function detectPeriodeFromAgendaGrid(grid){
+  if(!grid[0] || !grid[0][0]) return null;
+  var m = String(grid[0][0]).match(/Rencana Kerja\s+([A-Za-z' \u2019\u02bb]+?)\s+(\d{3,4})\s*H/i);
+  if(!m) return null;
+  var monthNorm = m[1].toLowerCase().replace(/['’ʻ]/g,"").replace(/\s+/g,"");
+  var monthIdx = HIJRI_MONTHS.findIndex(function(name){ return name.toLowerCase().replace(/['’ʻ]/g,"")===monthNorm; });
+  if(monthIdx===-1) return null;
+  return { label: HIJRI_MONTHS[monthIdx]+" "+m[2]+" H", hijriYear: parseInt(m[2],10), hijriMonth: monthIdx+1 };
+}
 
 function extractAgendaItemsFromGrid(grid){
   function findColInRow(rowIdx, label){
@@ -1035,7 +1081,7 @@ async function parseXlsAgendaFile(file){
     var wb = XLSX.read(buf, {type:"array"});
     var sheet = wb.Sheets[wb.SheetNames[0]];
     var grid = XLSX.utils.sheet_to_json(sheet, {header:1, defval:"", raw:false});
-    return { items: extractAgendaItemsFromGrid(grid), instansiTerdeteksi: detectInstansiFromAgendaGrid(grid) };
+    return { items: extractAgendaItemsFromGrid(grid), instansiTerdeteksi: detectInstansiFromAgendaGrid(grid), periode: detectPeriodeFromAgendaGrid(grid) };
   }
 
   var text = new TextDecoder("utf-8").decode(buf).replace(/^\uFEFF/, "").replace(/^\s+/, "");
@@ -1049,7 +1095,7 @@ async function parseXlsAgendaFile(file){
     var table = container.querySelector("table");
     if(!table) return null;
     var grid2 = htmlTableToGrid(table);
-    return { items: extractAgendaItemsFromGrid(grid2), instansiTerdeteksi: detectInstansiFromAgendaGrid(grid2) };
+    return { items: extractAgendaItemsFromGrid(grid2), instansiTerdeteksi: detectInstansiFromAgendaGrid(grid2), periode: detectPeriodeFromAgendaGrid(grid2) };
   } finally {
     document.body.removeChild(container);
   }
@@ -1073,6 +1119,7 @@ document.getElementById("agendaFileInput").addEventListener("change", function(e
         sf.status = "fail";
       } else {
         sf.parsedItems = result.items;
+        sf.parsedPeriode = result.periode || null;
         sf.status = "ok";
         if(result.instansiTerdeteksi && !sf.userEditedName){
           sf.instansiNama = result.instansiTerdeteksi;
@@ -1135,7 +1182,7 @@ document.getElementById("btnSimpanAgendaFiles").addEventListener("click", async 
     }
     state.agendaDiajukan.push({
       id: uid(), instansiNama: sf.instansiNama.trim(), fileName: sf.name,
-      items: sf.parsedItems, uploadedAt: Date.now()
+      items: sf.parsedItems, periode: sf.parsedPeriode || null, uploadedAt: Date.now()
     });
     okCount++;
   });
@@ -1157,15 +1204,39 @@ function renderAgendaList(){
   wrap.innerHTML = "";
   var sorted = state.agendaDiajukan.slice().sort(function(a,b){ return b.uploadedAt-a.uploadedAt; });
   document.getElementById("agendaEmptyNote").style.display = sorted.length ? "none" : "block";
+
+  // Kelompokkan per bulan ajuan (dari judul file Excel-nya). File yang periodenya gak
+  // kedeteksi (misal format lama/gak dikenali) masuk grup "Periode Tidak Diketahui" di paling bawah.
+  var groups = {}; // key -> {label, hijriYear, hijriMonth, entries:[]}
   sorted.forEach(function(a){
-    var card = document.createElement("div");
-    card.className = "arsip-card";
-    card.innerHTML =
-      '<div class="atop"><span class="aperiode">'+escapeHtml(a.instansiNama)+'</span>'+
-      '<span class="adate">'+new Date(a.uploadedAt).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})+'</span></div>'+
-      '<div class="ameta">'+a.items.length+' kegiatan diajukan · Total Ajuan: Rp '+totalAnggaranAgenda(a).toLocaleString("id-ID")+'</div>';
-    card.addEventListener("click", function(){ openDetailAgenda(a.id); });
-    wrap.appendChild(card);
+    var key = a.periode ? "H-"+a.periode.hijriYear+"-"+a.periode.hijriMonth : "unknown";
+    if(!groups[key]) groups[key] = { label: a.periode ? a.periode.label : "Periode Tidak Diketahui", periode: a.periode, entries: [] };
+    groups[key].entries.push(a);
+  });
+  var groupKeys = Object.keys(groups).sort(function(k1,k2){
+    if(k1==="unknown") return 1;
+    if(k2==="unknown") return -1;
+    var g1=groups[k1].periode, g2=groups[k2].periode;
+    return (g2.hijriYear*12+g2.hijriMonth) - (g1.hijriYear*12+g1.hijriMonth);
+  });
+
+  groupKeys.forEach(function(key){
+    var g = groups[key];
+    var header = document.createElement("p");
+    header.className = "empty-note";
+    header.style.cssText = "font-style:normal;font-weight:700;text-align:left;color:var(--ink);font-size:12.5px;margin:14px 0 8px;";
+    header.textContent = g.label;
+    wrap.appendChild(header);
+    g.entries.forEach(function(a){
+      var card = document.createElement("div");
+      card.className = "arsip-card";
+      card.innerHTML =
+        '<div class="atop"><span class="aperiode">'+escapeHtml(a.instansiNama)+'</span>'+
+        '<span class="adate">'+new Date(a.uploadedAt).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})+'</span></div>'+
+        '<div class="ameta">'+a.items.length+' kegiatan diajukan · Total Ajuan: Rp '+totalAnggaranAgenda(a).toLocaleString("id-ID")+'</div>';
+      card.addEventListener("click", function(){ openDetailAgenda(a.id); });
+      wrap.appendChild(card);
+    });
   });
 }
 
@@ -1696,6 +1767,26 @@ function renderTodayDateWidget(){
   if(elH) elH.textContent = h.day+" "+HIJRI_MONTHS[h.month-1]+" "+h.year+" H";
   if(elG) elG.textContent = now.getDate()+" "+MONTHS[now.getMonth()]+" "+now.getFullYear()+" M";
 }
+
+// Jam digital + tanggal di ruang kosong bawah sidebar (cuma keliatan di layar lebar/Electron)
+var DOW_FULL = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
+function renderSidebarClock(){
+  var now = new Date();
+  var elC = document.getElementById("sfClock");
+  var elD = document.getElementById("sfDate");
+  if(elC){
+    var hh = String(now.getHours()).padStart(2,"0");
+    var mm = String(now.getMinutes()).padStart(2,"0");
+    var ss = String(now.getSeconds()).padStart(2,"0");
+    elC.textContent = hh+":"+mm+":"+ss;
+  }
+  if(elD){
+    elD.textContent = DOW_FULL[now.getDay()]+", "+now.getDate()+" "+MONTHS[now.getMonth()]+" "+now.getFullYear();
+  }
+}
+renderSidebarClock();
+setInterval(renderSidebarClock, 1000);
+
 document.getElementById("setHijriOffset").addEventListener("change", function(){
   state.settings.hijriOffset = parseInt(this.value,10)||0;
   save();
