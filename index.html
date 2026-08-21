@@ -138,6 +138,8 @@
   .kat-title .dot.bahas{background:var(--danger);}
   .kat-title .dot.rekom{background:var(--purple);}
   .kat-item{padding:10px 0 12px 15px;border-left:2px solid var(--paper-line);margin-bottom:10px;}
+  .kat-check{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px;cursor:pointer;}
+  .kat-check input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;}
   .kat-item .kjudul{font-size:13.5px;font-weight:700;margin:0 0 5px;}
   .kat-item .kjudul .ktanggal{font-size:11px;font-weight:400;color:var(--ink-soft);}
   .kat-item .ktext{font-size:12.5px;color:var(--ink-soft);line-height:1.6;margin:0 0 3px;}
@@ -173,6 +175,19 @@
   .setting-row .lbl{font-size:13.5px;}
   .setting-row .desc{font-size:11px;color:var(--ink-soft);margin-top:2px;}
   .setting-row input{width:82px;padding:7px 9px;border:1px solid var(--paper-line);border-radius:8px;font-size:13px;text-align:center;}
+  .instansi-daftar-row{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff;border:1px solid var(--paper-line);border-radius:9px;padding:9px 12px;margin-bottom:7px;}
+  .instansi-daftar-row .idnama{font-size:13px;font-weight:600;}
+  .instansi-daftar-row .del-btn{background:none;border:none;color:var(--danger);font-size:15px;cursor:pointer;padding:2px 4px;}
+  .putusan-butir-card{background:#fff;border:1px solid var(--paper-line);border-radius:11px;padding:12px 13px;margin-bottom:10px;}
+  .pb-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .pb-top .pb-num{font-size:12px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;}
+  .pb-top .del-btn{background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer;padding:2px 4px;}
+  .putusan-butir-card textarea.pb-teks{min-height:80px;margin-bottom:8px;}
+  .pb-toggle{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;cursor:pointer;margin-bottom:6px;}
+  .pb-toggle input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;}
+  .pb-instansi-list{display:flex;flex-wrap:wrap;gap:7px;padding:8px 0 2px;}
+  .pb-instansi-chip{display:flex;align-items:center;gap:5px;font-size:12px;background:var(--paper);border:1px solid var(--paper-line);border-radius:20px;padding:5px 11px;cursor:pointer;}
+  .pb-instansi-chip input{width:14px;height:14px;accent-color:var(--accent);cursor:pointer;}
   .toggle3{display:flex;border:1px solid var(--paper-line);border-radius:10px;overflow:hidden;margin-bottom:14px;}
   .toggle3 button{flex:1;padding:9px 4px;border:none;background:#fff;font-size:11.5px;font-weight:700;color:var(--ink-soft);cursor:pointer;font-family:inherit;border-right:1px solid var(--paper-line);}
   .toggle3 button:last-child{border-right:none;}
@@ -366,12 +381,8 @@
       <div id="rangkumanEmpty" class="empty-note">Belum ada draft rangkuman. Mulai dari tab Upload.</div>
       <div id="rangkumanWrap" style="display:none;">
         <div class="section-title first">Rangkuman per Instansi</div>
+        <p class="field-hint-after" style="margin:-4px 0 12px;">Centang "Bahas di Musyawarah" pada kegiatan yang perlu dibawa — yang gak dicentang tetap tersimpan di rangkuman ini tapi gak ikut ke Word final & App3.</p>
         <div id="instansiListWrap"></div>
-
-        <div class="section-title">Catatan Koordinator</div>
-        <div class="field">
-          <textarea id="catatanKoordinator" placeholder="Yang kurang apa, apa yang perlu ditanyakan/dibahas di musyawarah, dst. (opsional, satu catatan untuk seluruh instansi)"></textarea>
-        </div>
 
         <button class="btn btn-teal btn-block" id="btnFinalisasi">Finalisasi Bahan Musyawarah</button>
         <button class="btn btn-ghost btn-block" id="btnBatalkanDraft">Batalkan Draft</button>
@@ -402,11 +413,9 @@
         <label>Terkait Rangkuman</label>
         <select id="putusanRangkumanSelect"><option value="">— Umum (tidak terkait rangkuman tertentu) —</option></select>
       </div>
-      <div class="field">
-        <label>Hasil Putusan</label>
-        <textarea id="putusanIsi" placeholder="Tulis hasil putusan/kesepakatan musyawarah di sini..." style="min-height:130px;"></textarea>
-      </div>
-      <button class="btn btn-primary btn-block" id="btnSimpanPutusan">Simpan Putusan</button>
+      <div id="putusanButirListWrap"></div>
+      <button class="btn-small" id="btnTambahButirPutusan" style="width:100%;margin-bottom:14px;">+ Tambah Putusan</button>
+      <button class="btn btn-primary btn-block" id="btnSimpanPutusan">Simpan Semua Putusan</button>
 
       <div class="upload-drop" id="btnImportPutusanKesekretariatan" style="padding:14px;margin-top:4px;">
         <div class="ic" style="font-size:18px;margin-bottom:2px;">📥</div>
@@ -414,6 +423,9 @@
         <div class="t2">File "Putusan untuk Disebarkan" dari Aplikasi 3</div>
       </div>
       <input type="file" id="filePutusanKesekretariatan" accept=".json" style="display:none;">
+
+      <button class="btn-small" id="btnEksporPengingatInstansi" style="width:100%;margin-top:10px;">⬇ Ekspor Pengingat untuk Instansi</button>
+      <p class="field-hint-after" style="margin:6px 0 0;">Hasilnya 1 file berisi semua putusan yang ditandai "Khusus Instansi Tertentu" — kirim ke semua instansi, tiap Agenda Kerja otomatis nyaring yang cocok buat dianya sendiri.</p>
 
       <div class="section-title">Arsip Putusan</div>
       <div id="putusanListWrap"></div>
@@ -428,6 +440,15 @@
         <div class="setting-row">
           <div><div class="lbl">Koreksi Tanggal Hijriah</div><div class="desc">Dalam hari, boleh minus. Isi kalau tanggal Hijriah beda dari kalender resmi/instansi.</div></div>
           <input type="number" id="setHijriOffset" min="-999" max="999" step="1" placeholder="0">
+        </div>
+      </div>
+      <div class="setting-group">
+        <h3>Daftar Instansi yang Dikoordinir</h3>
+        <p class="field-hint-after" style="margin:-4px 0 10px;">Otomatis nambah tiap kali ada instansi baru masuk laporan — dipakai buat pilihan target Putusan Khusus Instansi di tab Musyawarah. Bisa ditambah/dihapus manual.</p>
+        <div id="daftarInstansiListWrap"></div>
+        <div style="display:flex;gap:8px;margin-top:6px;">
+          <input type="text" id="inputTambahInstansi" placeholder="Nama instansi baru..." style="flex:1;">
+          <button class="btn-small" id="btnTambahInstansi" style="flex:0 0 auto;padding-left:16px;padding-right:16px;">+ Tambah</button>
         </div>
       </div>
       <div class="setting-group">
@@ -492,13 +513,9 @@
       <div class="sheet-handle"></div>
       <h2>Putusan Musyawarah</h2>
       <p class="sub" id="detailPutusanSub"></p>
-      <div class="field">
-        <label>Hasil Putusan</label>
-        <textarea id="detailPutusanIsi" style="min-height:130px;"></textarea>
-      </div>
+      <div id="detailPutusanListWrap"></div>
       <div class="btn-row">
         <button class="btn btn-ghost" id="btnDetailPutusanTutup">Tutup</button>
-        <button class="btn btn-primary" id="btnDetailPutusanSimpan">Simpan Perubahan</button>
       </div>
       <button class="btn btn-danger btn-block" id="btnDetailPutusanHapus" style="margin-top:10px;">Hapus Putusan Ini</button>
     </div>
@@ -572,13 +589,14 @@ function toast(msg){
 
 // ================= State =================
 var state = {
-  settings: { hijriOffset: 0 },
-  draft: null,              // { hijriYear, hijriMonth, instansiList: [...], catatanKoordinator }
+  settings: { hijriOffset: 0, daftarInstansi: [] },
+  draft: null,              // { hijriYear, hijriMonth, instansiList: [...] }
   stagingFiles: [],         // file yang lagi diunggah/diproses sebelum jadi draft
   arsipRangkuman: [],
   arsipMusyawarah: [],
   stagingAgendaFiles: [],   // file .xls ajuan agenda yang lagi diunggah sebelum disimpan
-  agendaDiajukan: []        // [{ id, instansiNama, fileName, items:[...], uploadedAt }]
+  agendaDiajukan: [],       // [{ id, instansiNama, fileName, items:[...], uploadedAt }]
+  putusanDraftList: []      // [{id, teks, khususInstansi, instansiTerpilih:[...]}] — draft kerja, gak disimpan
 };
 
 function load(){
@@ -586,7 +604,7 @@ function load(){
     var raw = localStorage.getItem(STORAGE_KEY);
     if(raw){
       var data = JSON.parse(raw);
-      state.settings = Object.assign({hijriOffset:0}, data.settings||{});
+      state.settings = Object.assign({hijriOffset:0, daftarInstansi:[]}, data.settings||{});
       state.arsipRangkuman = data.arsipRangkuman || [];
       state.arsipMusyawarah = data.arsipMusyawarah || [];
       state.agendaDiajukan = data.agendaDiajukan || [];
@@ -645,6 +663,7 @@ function normalizeFromJsonBackup(data){
       judul: k.jenisKegiatan || "(tanpa judul)",
       hijriMonthKey: hijriKey(h.year,h.month),
       hijriDateLabel: h.day+" "+HIJRI_MONTHS[h.month-1]+" "+h.year+" H",
+      sasaran: k.sasaran || "",
       statusPelaksanaan: ev ? (ev.statusPelaksanaan||null) : null,
       capaianTarget: ev ? (ev.capaianTarget||null) : null,
       capaianTargetText: "",
@@ -663,6 +682,7 @@ function normalizeFromJsonBackup(data){
       judul: it.jenisKegiatan || "(tanpa judul)",
       hijriMonthKey: hijriKey(h.year,h.month),
       hijriDateLabel: h.day+" "+HIJRI_MONTHS[h.month-1]+" "+h.year+" H",
+      sasaran: it.sasaran || "",
       statusPelaksanaan: "sesuai",
       capaianTarget: null,
       capaianTargetText: "",
@@ -793,6 +813,7 @@ function parseFromDocxText(rawText){
 
     var indikator = extractLabelValue(lines, start, end, /^Indikator keberhasilan\s*:?\s*(.*)$/i) || "";
     var kendala = extractLabelValue(lines, start, end, /^Kendala yang dihadapi\s*:?\s*(.*)$/i) || "";
+    var sasaran = extractLabelValue(lines, start, end, /^Sasaran\s*:?\s*(.*)$/i) || "";
     var rtl = extractLabelValue(lines, start, end, /^Rencana tindak lanjut\s*:?\s*(.*)$/i);
     if(rtl===null) rtl = extractLabelValue(lines, start, end, /^Hasil\/tindak lanjut\s*:?\s*(.*)$/i);
     if(rtl===null) rtl = "";
@@ -809,6 +830,7 @@ function parseFromDocxText(rawText){
       judul: judul,
       hijriMonthKey: hijriMonthKey,
       hijriDateLabel: hijriDateLabel,
+      sasaran: sasaran,
       statusPelaksanaan: statusPelaksanaan,
       capaianTarget: capaianTarget,
       capaianTargetText: capaianTargetText,
@@ -835,7 +857,8 @@ function showTab(name){
   });
   if(name==="musyawarah") renderPutusanSelect();
   if(name==="arsip"){ renderArsipList(); renderAgendaList(); }
-  if(name==="musyawarah") renderPutusanList();
+  if(name==="musyawarah"){ renderPutusanList(); renderPutusanButirList(); }
+  if(name==="atur") renderDaftarInstansi();
   updatePeriodWidget();
 }
 document.querySelectorAll(".nav-btn").forEach(function(b){
@@ -1218,7 +1241,11 @@ function deriveFallbackPeriode(a){
     var label = a.items[i].tanggalLabel||"";
     for(var m=0;m<HIJRI_MONTHS.length;m++){
       if(label.indexOf(HIJRI_MONTHS[m])>-1){
-        return { label: HIJRI_MONTHS[m]+" (tahun tidak diketahui)", hijriYear: 0, hijriMonth: m+1 };
+        // Data lama gak nyimpen tahun sama sekali. Tebak dari tanggal file itu diupload — karena
+        // ini "Agenda Bulan Depan", tahun Hijriahnya hampir pasti sama kayak pas file diupload.
+        var guessYear = a.uploadedAt ? dateToHijri(new Date(a.uploadedAt)).year : 0;
+        var lbl = guessYear ? (HIJRI_MONTHS[m]+" "+guessYear+" H") : (HIJRI_MONTHS[m]+" (tahun tidak diketahui)");
+        return { label: lbl, hijriYear: guessYear, hijriMonth: m+1 };
       }
     }
   }
@@ -1355,13 +1382,23 @@ document.getElementById("btnBuildDraft").addEventListener("click", function(){
       nama: sf.instansiNama.trim(),
       sourceType: sf.type,
       warnings: sf.warnings.slice(),
-      items: itemsInMonth
+      items: itemsInMonth,
+      catatanKoordinator: ""
     };
   }).filter(function(ins){ return ins.items.length>0 || ins.warnings.length>0; });
 
   if(instansiList.length===0){ toast("Tidak ada data pada bulan yang dipilih"); return; }
 
-  state.draft = { hijriYear: hy, hijriMonth: hm, instansiList: instansiList, catatanKoordinator: "" };
+  // Daftarin nama instansi yang baru ketemu ke "Daftar Instansi yang Dikoordinir" (buat pilihan
+  // target Putusan Khusus Instansi nanti) — otomatis, gak perlu didaftar manual dari nol.
+  instansiList.forEach(function(ins){
+    if(ins.nama && state.settings.daftarInstansi.indexOf(ins.nama)===-1){
+      state.settings.daftarInstansi.push(ins.nama);
+    }
+  });
+  save();
+
+  state.draft = { hijriYear: hy, hijriMonth: hm, instansiList: instansiList };
   state.stagingFiles = [];
   document.getElementById("fileInput").value = "";
   renderFileRows();
@@ -1374,31 +1411,39 @@ document.getElementById("btnBuildDraft").addEventListener("click", function(){
 // ================= Kategorisasi 5 poin per instansi =================
 // Satu kegiatan = satu kartu, judul cuma muncul sekali, semua hasilnya (capaian/hasil
 // penting/kendala/perlu dibahas/rekomendasi) ditaruh sebagai baris berlabel di bawahnya.
-function buildActivityCards(ins){
-  return ins.items.map(function(it){
-    var rows = [];
-    if(it.isInsidentil){
-      rows.push({label:"Capaian", text:"Terlaksana (kegiatan insidentil)"});
-    } else if(it.belumEvaluasi){
-      rows.push({label:"Status", text:"Belum ada catatan evaluasi dari instansi.", tone:"warn"});
-      rows.push({label:"Perlu Dibahas", text:"Belum ada catatan evaluasi dari instansi.", tone:"danger"});
-    } else {
-      var statusTxt = STATUS_LABEL[it.statusPelaksanaan] || "-";
-      var capTxt = it.capaianTarget ? CAPAIAN_LABEL[it.capaianTarget] : (it.capaianTargetText || "-");
-      rows.push({label:"Capaian", text: statusTxt+" · "+capTxt});
-      if(it.statusPelaksanaan==="batal"){
-        rows.push({label:"Perlu Dibahas", text:"Tidak terlaksana pada bulan ini.", tone:"danger"});
-      }
+function buildCardRows(it){
+  var rows = [];
+  if(it.sasaran) rows.push({label:"Sasaran", text: it.sasaran});
+  if(it.isInsidentil){
+    rows.push({label:"Capaian", text:"Terlaksana (kegiatan insidentil)"});
+  } else if(it.belumEvaluasi){
+    rows.push({label:"Status", text:"Belum ada catatan evaluasi dari instansi.", tone:"warn"});
+    rows.push({label:"Perlu Dibahas", text:"Belum ada catatan evaluasi dari instansi.", tone:"danger"});
+  } else {
+    var statusTxt = STATUS_LABEL[it.statusPelaksanaan] || "-";
+    var capTxt = it.capaianTarget ? CAPAIAN_LABEL[it.capaianTarget] : (it.capaianTargetText || "-");
+    rows.push({label:"Capaian", text: statusTxt+" · "+capTxt});
+    if(it.statusPelaksanaan==="batal"){
+      rows.push({label:"Perlu Dibahas", text:"Tidak terlaksana pada bulan ini.", tone:"danger"});
     }
-    if(it.indikatorKeberhasilan) rows.push({label:"Hasil Penting", text: it.indikatorKeberhasilan});
-    if(it.kendala) rows.push({label:"Kendala", text: it.kendala});
-    if(it.rencanaTindakLanjut) rows.push({label:"Rekomendasi", text: it.rencanaTindakLanjut});
-    return {judul: it.judul, tanggal: it.hijriDateLabel, rows: rows};
+  }
+  if(it.indikatorKeberhasilan) rows.push({label:"Hasil Penting", text: it.indikatorKeberhasilan});
+  if(it.kendala) rows.push({label:"Kendala", text: it.kendala});
+  if(it.rencanaTindakLanjut) rows.push({label:"Rekomendasi", text: it.rencanaTindakLanjut});
+  return rows;
+}
+function buildActivityCards(ins){
+  return ins.items.map(function(it, itemIdx){
+    return {judul: it.judul, tanggal: it.hijriDateLabel, rows: buildCardRows(it), disertakan: !!it.disertakan, itemIdx: itemIdx};
   });
 }
 
-function activityCardHtml(c){
-  var html = '<div class="kat-item"><p class="kjudul">'+escapeHtml(c.judul)+' <span class="ktanggal">— '+escapeHtml(c.tanggal)+'</span></p>';
+function activityCardHtml(c, insIdx){
+  var checkboxHtml = "";
+  if(insIdx!==undefined){
+    checkboxHtml = '<label class="kat-check"><input type="checkbox" class="chk-disertakan" data-ins-idx="'+insIdx+'" data-item-idx="'+c.itemIdx+'"'+(c.disertakan?" checked":"")+'> Bahas di Musyawarah</label>';
+  }
+  var html = '<div class="kat-item">'+checkboxHtml+'<p class="kjudul">'+escapeHtml(c.judul)+' <span class="ktanggal">— '+escapeHtml(c.tanggal)+'</span></p>';
   c.rows.forEach(function(r){
     var tone = r.tone ? (" tone-"+r.tone) : "";
     html += '<p class="ktext'+tone+'"><b>'+escapeHtml(r.label)+':</b> '+escapeHtml(r.text)+'</p>';
@@ -1407,7 +1452,7 @@ function activityCardHtml(c){
   return html;
 }
 
-function instansiBodyHtml(ins){
+function instansiBodyHtml(ins, insIdx){
   var html = "";
   if(ins.warnings.length){
     html += '<div class="instansi-warn">⚠ '+ins.warnings.map(escapeHtml).join('<br>')+'</div>';
@@ -1416,7 +1461,11 @@ function instansiBodyHtml(ins){
   if(cards.length===0){
     html += '<div class="kat-empty">Tidak ada kegiatan tercatat.</div>';
   } else {
-    cards.forEach(function(c){ html += activityCardHtml(c); });
+    cards.forEach(function(c){ html += activityCardHtml(c, insIdx); });
+  }
+  if(insIdx!==undefined){
+    html += '<div class="field" style="margin-top:14px;margin-bottom:0;"><label>Catatan Koordinator — '+escapeHtml(ins.nama)+'</label>'+
+      '<textarea class="catatan-per-instansi" data-ins-idx="'+insIdx+'" placeholder="Catatan khusus buat instansi ini (opsional)...">'+escapeHtml(ins.catatanKoordinator||"")+'</textarea></div>';
   }
   return html;
 }
@@ -1436,7 +1485,7 @@ function renderDraft(){
         '<div><div class="iname">'+escapeHtml(ins.nama)+'</div><div class="icount">'+ins.items.length+' kegiatan tercatat</div></div>'+
         '<span class="chev">▾</span>'+
       '</div>'+
-      '<div class="instansi-body">'+instansiBodyHtml(ins)+'</div>';
+      '<div class="instansi-body">'+instansiBodyHtml(ins, idx)+'</div>';
     wrap.appendChild(card);
   });
   wrap.querySelectorAll(".instansi-head").forEach(function(h){
@@ -1445,12 +1494,22 @@ function renderDraft(){
       h.nextElementSibling.classList.toggle("collapsed");
     });
   });
-  document.getElementById("catatanKoordinator").value = state.draft.catatanKoordinator || "";
+  wrap.querySelectorAll(".chk-disertakan").forEach(function(cb){
+    cb.addEventListener("change", function(){
+      var iIdx = parseInt(cb.dataset.insIdx,10), itIdx = parseInt(cb.dataset.itemIdx,10);
+      if(state.draft && state.draft.instansiList[iIdx] && state.draft.instansiList[iIdx].items[itIdx]){
+        state.draft.instansiList[iIdx].items[itIdx].disertakan = cb.checked;
+      }
+    });
+  });
+  wrap.querySelectorAll(".catatan-per-instansi").forEach(function(ta){
+    ta.addEventListener("input", function(){
+      var iIdx = parseInt(ta.dataset.insIdx,10);
+      if(state.draft && state.draft.instansiList[iIdx]) state.draft.instansiList[iIdx].catatanKoordinator = ta.value;
+    });
+  });
   updatePeriodWidget();
 }
-document.getElementById("catatanKoordinator").addEventListener("input", function(){
-  if(state.draft) state.draft.catatanKoordinator = this.value;
-});
 
 document.getElementById("btnBatalkanDraft").addEventListener("click", async function(){
   var ok = await showConfirm("Draft rangkuman yang sedang ditinjau akan dihapus (belum disimpan ke arsip). Yakin?", "Hapus Draft");
@@ -1461,21 +1520,27 @@ document.getElementById("btnBatalkanDraft").addEventListener("click", async func
 });
 
 // ================= Export Word (bahan musyawarah) =================
+// Cuma kegiatan yang dicentang "Bahas di Musyawarah" yang ikut ke Word final & paket data
+// App3 — rangkuman lengkap (semua kegiatan) tetap ke-arsip utuh, gak kepengaruh sama filter ini.
+function filterInsForExport(ins){
+  return { nama: ins.nama, sourceType: ins.sourceType, warnings: ins.warnings, catatanKoordinator: ins.catatanKoordinator||"", items: ins.items.filter(function(it){ return !!it.disertakan; }) };
+}
+
 function composeWordHtml(entry){
   var html = "<h1>Bahan Musyawarah</h1>";
   html += "<p>Periode: "+escapeHtml(hijriMonthLabel(entry.hijriYear, entry.hijriMonth))+"</p>";
   entry.instansiList.forEach(function(ins){
-    html += "<h2>"+escapeHtml(ins.nama)+"</h2>";
-    var cards = buildActivityCards(ins);
-    if(cards.length===0){ html += "<p><em>Tidak ada kegiatan tercatat.</em></p>"; }
+    var insF = filterInsForExport(ins);
+    html += "<h2>"+escapeHtml(insF.nama)+"</h2>";
+    var cards = buildActivityCards(insF);
+    if(cards.length===0){ html += "<p><em>Tidak ada kegiatan yang dicentang untuk musyawarah.</em></p>"; }
     cards.forEach(function(c){
       html += "<h3>"+escapeHtml(c.judul)+" — "+escapeHtml(c.tanggal)+"</h3><ul>";
       c.rows.forEach(function(r){ html += "<li><b>"+escapeHtml(r.label)+":</b> "+escapeHtml(r.text)+"</li>"; });
       html += "</ul>";
     });
+    html += "<h4>Catatan Koordinator</h4><p>"+(insF.catatanKoordinator ? escapeHtml(insF.catatanKoordinator).replace(/\n/g,"<br>") : "<em>(tidak ada catatan)</em>")+"</p>";
   });
-  html += "<h2>Catatan Koordinator</h2>";
-  html += "<p>"+(entry.catatanKoordinator ? escapeHtml(entry.catatanKoordinator).replace(/\n/g,"<br>") : "<em>(tidak ada catatan tambahan)</em>")+"</p>";
   return html;
 }
 
@@ -1484,7 +1549,7 @@ function exportWordBlob(entry){
   var fullHtml =
     '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">'+
     '<head><meta charset="utf-8"><title>Bahan Musyawarah</title>'+
-    '<style>body{font-family:"Times New Roman",Times,serif;font-size:12pt;line-height:1.5;color:#222;} h1{font-size:16pt;} h2{font-size:14pt;margin-top:20px;} h3{font-size:12.5pt;margin-top:14px;margin-bottom:2px;} li{margin-bottom:4px;text-align:justify;}</style>'+
+    '<style>body{font-family:"Times New Roman",Times,serif;font-size:12pt;line-height:1.5;color:#222;} h1{font-size:16pt;} h2{font-size:14pt;margin-top:20px;} h3{font-size:12.5pt;margin-top:14px;margin-bottom:2px;} h4{font-size:12pt;margin-top:10px;margin-bottom:2px;} li{margin-bottom:4px;text-align:justify;}</style>'+
     '</head><body>'+bodyHtml+'</body></html>';
   return new Blob(['\ufeff', fullHtml], {type:'application/msword'});
 }
@@ -1494,34 +1559,53 @@ function exportWordBlob(entry){
 // yang dipakai Aplikasi 3: Capaian, Kekurangan, Kendala, Hal Perlu Dibahas.
 // (Hasil Penting digabung ke Capaian, Rekomendasi digabung ke Hal Perlu Dibahas.
 // Kondisi Umum/Temuan/Persoalan bukan urusan Aplikasi 2, itu diisi di Aplikasi 3.)
-function buildAppTigaCategories(ins){
-  var capaian = [], kekurangan = [], kendala = [], perluDibahas = [];
+// "Keterangan" gabungan Kekurangan+Kendala lama jadi 1 daftar per kegiatan — kriterianya OR
+// (kegiatan masuk kalau capaiannya sebagian/tidak tercapai, ATAU ada teks Kendala diisi, atau
+// dua-duanya) biar gak ada kegiatan yang keselip cuma gara-gara kolom Kendala dikosongin.
+function buildKeteranganList(ins){
+  var out = [];
   ins.items.forEach(function(it){
-    if(it.isInsidentil){
-      var tIns = "Terlaksana (kegiatan insidentil)"+(it.rencanaTindakLanjut ? ". Tindak lanjut: "+it.rencanaTindakLanjut : "");
-      capaian.push({judul: it.judul, tanggal: it.hijriDateLabel, text: tIns});
-      return;
-    }
-    if(it.belumEvaluasi){
-      perluDibahas.push({judul: it.judul, tanggal: it.hijriDateLabel, text: "Belum ada catatan evaluasi dari instansi."});
-      return;
-    }
-    var statusTxt = STATUS_LABEL[it.statusPelaksanaan] || "-";
+    if(it.isInsidentil || it.belumEvaluasi) return;
+    var isKurang = (it.capaianTarget==="sebagian" || it.capaianTarget==="tidak");
+    var hasKendala = !!it.kendala;
+    if(!isKurang && !hasKendala) return;
     var capTxt = it.capaianTarget ? CAPAIAN_LABEL[it.capaianTarget] : (it.capaianTargetText || "-");
-    var mainText = statusTxt+" · "+capTxt+(it.indikatorKeberhasilan ? ". Hasil: "+it.indikatorKeberhasilan : "");
-    if(it.capaianTarget==="sebagian" || it.capaianTarget==="tidak"){
-      kekurangan.push({judul: it.judul, tanggal: it.hijriDateLabel, text: mainText});
-    } else {
-      capaian.push({judul: it.judul, tanggal: it.hijriDateLabel, text: mainText});
+    var text = isKurang ? capTxt : "Ada kendala";
+    if(hasKendala) text += ". Kendala: "+it.kendala;
+    out.push({judul: it.judul, tanggal: it.hijriDateLabel, text: text});
+  });
+  return out;
+}
+function buildPerluDibahasList(ins){
+  var out = [];
+  ins.items.forEach(function(it){
+    if(it.isInsidentil) return;
+    if(it.belumEvaluasi){
+      out.push({judul: it.judul, tanggal: it.hijriDateLabel, text: "Belum ada catatan evaluasi dari instansi."});
+      return;
     }
-    if(it.kendala) kendala.push({judul: it.judul, tanggal: it.hijriDateLabel, text: it.kendala});
     if(it.statusPelaksanaan==="batal"){
-      perluDibahas.push({judul: it.judul, tanggal: it.hijriDateLabel, text: "Tidak terlaksana pada bulan ini."+(it.rencanaTindakLanjut?" Rencana: "+it.rencanaTindakLanjut:"")});
+      out.push({judul: it.judul, tanggal: it.hijriDateLabel, text: "Tidak terlaksana pada bulan ini."+(it.rencanaTindakLanjut?" Rencana: "+it.rencanaTindakLanjut:"")});
     } else if(it.rencanaTindakLanjut){
-      perluDibahas.push({judul: it.judul, tanggal: it.hijriDateLabel, text: "Rekomendasi/tindak lanjut: "+it.rencanaTindakLanjut});
+      out.push({judul: it.judul, tanggal: it.hijriDateLabel, text: "Rekomendasi/tindak lanjut: "+it.rencanaTindakLanjut});
     }
   });
-  return {capaian:capaian, kekurangan:kekurangan, kendala:kendala, perluDibahas:perluDibahas};
+  return out;
+}
+
+// Rekap 3-arah (tercapai/sebagian/tidak tercapai) dihitung dari SEMUA kegiatan bulan itu (ins.items
+// asli, BUKAN yang udah difilter centang "Bahas di Musyawarah") — biar gambaran capaian tetap utuh
+// walau cuma sebagian kegiatan yang dibawa detail ke musyawarah.
+function computeCapaianBreakdown(ins){
+  var tercapai=0, sebagian=0, tidak=0;
+  ins.items.forEach(function(it){
+    if(it.belumEvaluasi) return;
+    if(it.isInsidentil){ tercapai++; return; }
+    if(it.capaianTarget==="sebagian") sebagian++;
+    else if(it.capaianTarget==="tidak") tidak++;
+    else tercapai++;
+  });
+  return { tercapai:tercapai, sebagian:sebagian, tidak:tidak, total:tercapai+sebagian+tidak };
 }
 
 function exportDataPackage(entry){
@@ -1529,10 +1613,12 @@ function exportDataPackage(entry){
     aplikasi: "rangkuman",
     periode: { hijriYear: entry.hijriYear, hijriMonth: entry.hijriMonth, label: hijriMonthLabel(entry.hijriYear, entry.hijriMonth) },
     instansi: entry.instansiList.map(function(ins){
-      var kat = buildAppTigaCategories(ins);
-      return { nama: ins.nama, capaian: kat.capaian, kekurangan: kat.kekurangan, kendala: kat.kendala, perluDibahas: kat.perluDibahas };
+      var insF = filterInsForExport(ins);
+      var breakdown = computeCapaianBreakdown(ins);
+      return { nama: insF.nama, catatanKoordinator: insF.catatanKoordinator,
+        keterangan: buildKeteranganList(insF), perluDibahas: buildPerluDibahasList(insF),
+        totalKegiatan: breakdown.total, totalTercapai: breakdown.tercapai, totalSebagian: breakdown.sebagian, totalTidakTercapai: breakdown.tidak };
     }),
-    catatanKoordinator: entry.catatanKoordinator || "",
     createdAt: entry.createdAt
   };
   return new Blob([JSON.stringify(pkg, null, 2)], {type:"application/json"});
@@ -1540,25 +1626,35 @@ function exportDataPackage(entry){
 
 document.getElementById("btnFinalisasi").addEventListener("click", async function(){
   if(!state.draft) return;
-  var entry = Object.assign({}, state.draft, { id: uid(), createdAt: Date.now() });
-  state.arsipRangkuman.push(entry);
-  save();
+  var btn = this;
+  if(btn.disabled) return; // jaga-jaga anti dobel-klik/tap selagi proses simpan file async masih jalan
+  btn.disabled = true;
+  var originalLabel = btn.textContent;
+  btn.textContent = "Menyimpan...";
+  try{
+    var entry = Object.assign({}, state.draft, { id: uid(), createdAt: Date.now() });
+    state.arsipRangkuman.push(entry);
+    save();
 
-  var vh = entry.hijriYear+"-"+String(entry.hijriMonth).padStart(2,"0");
-  var wordBlob = exportWordBlob(entry);
-  var dataBlob = exportDataPackage(entry);
-  var wFile = "bahan-musyawarah-"+vh+"-H.doc";
-  var dFile = "paket-data-rangkuman-"+vh+"-H.json";
+    var vh = entry.hijriYear+"-"+String(entry.hijriMonth).padStart(2,"0");
+    var wordBlob = exportWordBlob(entry);
+    var dataBlob = exportDataPackage(entry);
+    var wFile = "bahan-musyawarah-"+vh+"-H.doc";
+    var dFile = "paket-data-rangkuman-"+vh+"-H.json";
 
-  var save1 = (window.AgendaFiles ? window.AgendaFiles.saveOrShareBlob(wFile, wordBlob, {offerShare:false}) : Promise.resolve());
-  await save1;
-  var save2 = (window.AgendaFiles ? window.AgendaFiles.saveOrShareBlob(dFile, dataBlob) : Promise.resolve());
-  await save2;
+    var save1 = (window.AgendaFiles ? window.AgendaFiles.saveOrShareBlob(wFile, wordBlob, {offerShare:false}) : Promise.resolve());
+    await save1;
+    var save2 = (window.AgendaFiles ? window.AgendaFiles.saveOrShareBlob(dFile, dataBlob) : Promise.resolve());
+    await save2;
 
-  toast("Bahan musyawarah tersimpan ke Arsip & file berhasil diekspor");
-  state.draft = null;
-  renderDraft();
-  showTab("arsip");
+    toast("Bahan musyawarah tersimpan ke Arsip & file berhasil diekspor");
+    state.draft = null;
+    renderDraft();
+    showTab("arsip");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
 });
 
 // ================= Arsip Rangkuman =================
@@ -1613,46 +1709,64 @@ function openDetailArsip(id){
   document.getElementById("detailArsipTitle").textContent = hijriMonthLabel(entry.hijriYear, entry.hijriMonth);
   document.getElementById("detailArsipSub").textContent = entry.instansiList.length+" instansi · dibuat "+new Date(entry.createdAt).toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"});
   var body = "";
-  entry.instansiList.forEach(function(ins){
-    body += '<div class="instansi-card"><div class="instansi-head"><div><div class="iname">'+escapeHtml(ins.nama)+'</div><div class="icount">'+ins.items.length+' kegiatan</div></div></div><div class="instansi-body">'+instansiBodyHtml(ins)+'</div></div>';
+  // Rangkuman dari sebelum fitur Catatan per-Instansi ada masih nyimpen 1 catatan gabungan di
+  // level entry — ditampilin apa adanya sebagai referensi, gak dipaksa dipetain ke instansi mana.
+  var isLegacy = !!entry.catatanKoordinator && entry.instansiList.every(function(ins){ return ins.catatanKoordinator===undefined; });
+  if(isLegacy){
+    body += '<div class="section-title">Catatan Lama (sebelum per-instansi)</div>'+
+      '<div class="info-card"><p>'+escapeHtml(entry.catatanKoordinator).replace(/\n/g,"<br>")+'</p></div>';
+  }
+  entry.instansiList.forEach(function(ins, idx){
+    body += '<div class="instansi-card"><div class="instansi-head"><div><div class="iname">'+escapeHtml(ins.nama)+'</div><div class="icount">'+ins.items.length+' kegiatan</div></div></div>'+
+      '<div class="instansi-body">'+instansiBodyHtml(ins)+
+        '<div class="section-title" style="margin-top:14px;">Catatan Koordinator</div>'+
+        '<div class="arsip-catatan-view" data-ins-idx="'+idx+'">'+
+          '<div class="info-card"><p class="arsip-catatan-text" data-ins-idx="'+idx+'">'+(ins.catatanKoordinator?escapeHtml(ins.catatanKoordinator).replace(/\n/g,"<br>"):"<em>(tidak ada catatan)</em>")+'</p></div>'+
+          '<button class="btn-small btn-edit-catatan-arsip" data-ins-idx="'+idx+'" style="width:100%;">✎ Edit Catatan (perlu PIN)</button>'+
+        '</div>'+
+        '<div class="arsip-catatan-edit" data-ins-idx="'+idx+'" style="display:none;">'+
+          '<div class="field"><textarea class="arsip-catatan-input" data-ins-idx="'+idx+'" style="min-height:90px;">'+escapeHtml(ins.catatanKoordinator||"")+'</textarea></div>'+
+          '<div class="btn-row">'+
+            '<button class="btn btn-ghost btn-catatan-batal" data-ins-idx="'+idx+'">Batal</button>'+
+            '<button class="btn btn-primary btn-catatan-simpan" data-ins-idx="'+idx+'">Simpan Catatan</button>'+
+          '</div>'+
+        '</div>'+
+      '</div></div>';
   });
-  body += '<div class="section-title">Catatan Koordinator</div>'+
-    '<div id="detailArsipCatatanView">'+
-      '<div class="info-card"><p id="detailArsipCatatanText">'+(entry.catatanKoordinator?escapeHtml(entry.catatanKoordinator).replace(/\n/g,"<br>"):"<em>(tidak ada catatan)</em>")+'</p></div>'+
-      '<button class="btn-small" id="btnEditCatatanArsip" style="width:100%;">✎ Edit Catatan (perlu PIN)</button>'+
-    '</div>'+
-    '<div id="detailArsipCatatanEditWrap" style="display:none;">'+
-      '<div class="field"><textarea id="detailArsipCatatanInput" style="min-height:100px;">'+escapeHtml(entry.catatanKoordinator||"")+'</textarea></div>'+
-      '<div class="btn-row">'+
-        '<button class="btn btn-ghost" id="btnCatatanArsipBatal">Batal</button>'+
-        '<button class="btn btn-primary" id="btnCatatanArsipSimpan">Simpan Catatan</button>'+
-      '</div>'+
-    '</div>';
   document.getElementById("detailArsipBody").innerHTML = body;
   detailArsipBackdrop.classList.add("open");
 
-  document.getElementById("btnEditCatatanArsip").addEventListener("click", function(){
-    requireOwnerPinThen(function(){
-      document.getElementById("detailArsipCatatanView").style.display = "none";
-      document.getElementById("detailArsipCatatanEditWrap").style.display = "block";
-      document.getElementById("detailArsipCatatanInput").focus();
+  document.querySelectorAll(".btn-edit-catatan-arsip").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var idx = btn.dataset.insIdx;
+      requireOwnerPinThen(function(){
+        document.querySelector('.arsip-catatan-view[data-ins-idx="'+idx+'"]').style.display = "none";
+        document.querySelector('.arsip-catatan-edit[data-ins-idx="'+idx+'"]').style.display = "block";
+      });
     });
   });
-  document.getElementById("btnCatatanArsipBatal").addEventListener("click", function(){
-    document.getElementById("detailArsipCatatanEditWrap").style.display = "none";
-    document.getElementById("detailArsipCatatanView").style.display = "block";
+  document.querySelectorAll(".btn-catatan-batal").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var idx = btn.dataset.insIdx;
+      document.querySelector('.arsip-catatan-edit[data-ins-idx="'+idx+'"]').style.display = "none";
+      document.querySelector('.arsip-catatan-view[data-ins-idx="'+idx+'"]').style.display = "block";
+    });
   });
-  document.getElementById("btnCatatanArsipSimpan").addEventListener("click", function(){
-    var v = document.getElementById("detailArsipCatatanInput").value;
-    var e = state.arsipRangkuman.find(function(x){ return x.id===currentDetailArsipId; });
-    if(e){
-      e.catatanKoordinator = v;
-      save();
-      document.getElementById("detailArsipCatatanText").innerHTML = v ? escapeHtml(v).replace(/\n/g,"<br>") : "<em>(tidak ada catatan)</em>";
-      toast("Catatan Koordinator diperbarui");
-    }
-    document.getElementById("detailArsipCatatanEditWrap").style.display = "none";
-    document.getElementById("detailArsipCatatanView").style.display = "block";
+  document.querySelectorAll(".btn-catatan-simpan").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var idx = parseInt(btn.dataset.insIdx,10);
+      var input = document.querySelector('.arsip-catatan-input[data-ins-idx="'+idx+'"]');
+      var v = input.value;
+      var e = state.arsipRangkuman.find(function(x){ return x.id===currentDetailArsipId; });
+      if(e && e.instansiList[idx]){
+        e.instansiList[idx].catatanKoordinator = v;
+        save();
+        document.querySelector('.arsip-catatan-text[data-ins-idx="'+idx+'"]').innerHTML = v ? escapeHtml(v).replace(/\n/g,"<br>") : "<em>(tidak ada catatan)</em>";
+        toast("Catatan Koordinator diperbarui");
+      }
+      document.querySelector('.arsip-catatan-edit[data-ins-idx="'+idx+'"]').style.display = "none";
+      document.querySelector('.arsip-catatan-view[data-ins-idx="'+idx+'"]').style.display = "block";
+    });
   });
 }
 document.getElementById("btnDetailArsipTutup").addEventListener("click", function(){ detailArsipBackdrop.classList.remove("open"); });
@@ -1688,21 +1802,83 @@ function renderPutusanSelect(){
   sel.value = currentVal || "";
 }
 
+// ================= Catat Putusan Musyawarah (daftar per-butir) =================
+function newPutusanButir(){
+  return { id: uid(), teks: "", khususInstansi: false, instansiTerpilih: [] };
+}
+function renderPutusanButirList(){
+  var wrap = document.getElementById("putusanButirListWrap");
+  if(!wrap) return;
+  if(state.putusanDraftList.length===0) state.putusanDraftList.push(newPutusanButir());
+  wrap.innerHTML = "";
+  state.putusanDraftList.forEach(function(b, idx){
+    var card = document.createElement("div");
+    card.className = "putusan-butir-card";
+    var instansiChips = state.settings.daftarInstansi.map(function(nama){
+      var checked = b.instansiTerpilih.indexOf(nama)>-1;
+      return '<label class="pb-instansi-chip"><input type="checkbox" class="pb-instansi-chk" data-idx="'+idx+'" data-nama="'+escapeHtml(nama)+'"'+(checked?" checked":"")+'> '+escapeHtml(nama)+'</label>';
+    }).join("");
+    if(state.settings.daftarInstansi.length===0){
+      instansiChips = '<p class="empty-note" style="padding:2px 0;">Belum ada instansi terdaftar — tambah dulu di tab Atur.</p>';
+    }
+    card.innerHTML =
+      '<div class="pb-top"><span class="pb-num">Putusan '+(idx+1)+'</span>'+
+        (state.putusanDraftList.length>1 ? '<button class="del-btn btn-hapus-butir" data-idx="'+idx+'">✕</button>' : '')+
+      '</div>'+
+      '<textarea class="pb-teks" data-idx="'+idx+'" placeholder="Tulis hasil putusan/kesepakatan musyawarah di sini...">'+escapeHtml(b.teks)+'</textarea>'+
+      '<label class="pb-toggle"><input type="checkbox" class="pb-khusus" data-idx="'+idx+'"'+(b.khususInstansi?" checked":"")+'> Khusus Instansi Tertentu</label>'+
+      '<div class="pb-instansi-list" data-idx="'+idx+'" style="display:'+(b.khususInstansi?"flex":"none")+';">'+instansiChips+'</div>';
+    wrap.appendChild(card);
+  });
+
+  wrap.querySelectorAll(".pb-teks").forEach(function(ta){
+    ta.addEventListener("input", function(){ state.putusanDraftList[parseInt(ta.dataset.idx,10)].teks = ta.value; });
+  });
+  wrap.querySelectorAll(".pb-khusus").forEach(function(cb){
+    cb.addEventListener("change", function(){
+      var idx = parseInt(cb.dataset.idx,10);
+      state.putusanDraftList[idx].khususInstansi = cb.checked;
+      wrap.querySelector('.pb-instansi-list[data-idx="'+idx+'"]').style.display = cb.checked ? "flex" : "none";
+    });
+  });
+  wrap.querySelectorAll(".pb-instansi-chk").forEach(function(cb){
+    cb.addEventListener("change", function(){
+      var idx = parseInt(cb.dataset.idx,10), nama = cb.dataset.nama;
+      var arr = state.putusanDraftList[idx].instansiTerpilih;
+      var pos = arr.indexOf(nama);
+      if(cb.checked && pos===-1) arr.push(nama);
+      else if(!cb.checked && pos>-1) arr.splice(pos,1);
+    });
+  });
+  wrap.querySelectorAll(".btn-hapus-butir").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      state.putusanDraftList.splice(parseInt(btn.dataset.idx,10),1);
+      renderPutusanButirList();
+    });
+  });
+}
+document.getElementById("btnTambahButirPutusan").addEventListener("click", function(){
+  state.putusanDraftList.push(newPutusanButir());
+  renderPutusanButirList();
+});
+
 document.getElementById("btnSimpanPutusan").addEventListener("click", function(){
-  var isi = document.getElementById("putusanIsi").value.trim();
-  if(!isi){ toast("Isi hasil putusan dulu"); return; }
+  var isian = state.putusanDraftList.filter(function(b){ return b.teks.trim(); });
+  if(isian.length===0){ toast("Isi minimal 1 putusan dulu"); return; }
   var rangkumanId = document.getElementById("putusanRangkumanSelect").value || null;
   var entry = state.arsipRangkuman.find(function(e){ return e.id===rangkumanId; });
   state.arsipMusyawarah.push({
     id: uid(), rangkumanId: rangkumanId,
     periodeLabel: entry ? hijriMonthLabel(entry.hijriYear, entry.hijriMonth) : "Umum",
-    keputusan: isi, createdAt: Date.now(), sumber: "lokal"
+    putusanList: isian.map(function(b){ return { id: b.id, teks: b.teks.trim(), khususInstansi: b.khususInstansi, instansiTerpilih: b.instansiTerpilih.slice() }; }),
+    createdAt: Date.now(), sumber: "lokal"
   });
   save();
-  document.getElementById("putusanIsi").value = "";
+  state.putusanDraftList = [];
   document.getElementById("putusanRangkumanSelect").value = "";
+  renderPutusanButirList();
   renderPutusanList();
-  toast("Putusan musyawarah tersimpan");
+  toast("Putusan musyawarah tersimpan ("+isian.length+" butir)");
 });
 
 // ================= Impor Putusan dari Kesekretariatan (Aplikasi 3) =================
@@ -1719,11 +1895,13 @@ document.getElementById("filePutusanKesekretariatan").addEventListener("change",
       toast("File ini bukan Putusan untuk Disebarkan dari Aplikasi 3"); return;
     }
     var periodeLabel = data.periode ? data.periode.label : "-";
-    var gabung = "PUTUSAN:\n"+(data.putusan||"(tidak ada)")+"\n\nARAHAN:\n"+(data.arahan||"(tidak ada)");
+    // App3 belum dukung per-butir/per-instansi — putusannya masuk sebagai 1 butir umum (general).
     state.arsipMusyawarah.push({
       id: uid(), rangkumanId: null,
       periodeLabel: periodeLabel,
-      keputusan: gabung, createdAt: Date.now(),
+      putusanList: [{ id: uid(), teks: data.putusan||"(tidak ada)", khususInstansi: false, instansiTerpilih: [] }],
+      arahan: data.arahan || "",
+      createdAt: Date.now(),
       sumber: "kesekretariatan", shafAsal: data.shaf || ""
     });
     save();
@@ -1742,17 +1920,46 @@ function renderPutusanList(){
   sorted.forEach(function(p){
     var card = document.createElement("div");
     card.className = "arsip-card";
-    var preview = p.keputusan.length>110 ? p.keputusan.slice(0,110)+"…" : p.keputusan;
-    var tagHtml = p.sumber==="kesekretariatan" ? '<div class="atags"><span class="tag putusan">Dari '+escapeHtml(p.shafAsal||"Kesekretariatan")+'</span></div>' : "";
+    var list = p.putusanList || (p.keputusan ? [{teks:p.keputusan, khususInstansi:false, instansiTerpilih:[]}] : []);
+    var preview = list.map(function(b){ return b.teks; }).join(" · ");
+    if(preview.length>110) preview = preview.slice(0,110)+"…";
+    var khususCount = list.filter(function(b){ return b.khususInstansi; }).length;
+    var tagHtml = '<div class="atags">';
+    if(p.sumber==="kesekretariatan") tagHtml += '<span class="tag putusan">Dari '+escapeHtml(p.shafAsal||"Kesekretariatan")+'</span>';
+    if(khususCount>0) tagHtml += '<span class="tag putusan">'+khususCount+' khusus instansi</span>';
+    tagHtml += '</div>';
     card.innerHTML =
       '<div class="atop"><span class="aperiode">'+escapeHtml(p.periodeLabel)+'</span>'+
       '<span class="adate">'+new Date(p.createdAt).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})+'</span></div>'+
-      '<div class="ameta">'+escapeHtml(preview)+'</div>'+tagHtml;
+      '<div class="ameta">'+escapeHtml(preview||"(kosong)")+'</div>'+tagHtml;
     card.addEventListener("click", function(){ openDetailPutusan(p.id); });
     wrap.appendChild(card);
   });
   renderSidePanel();
 }
+
+document.getElementById("btnEksporPengingatInstansi").addEventListener("click", async function(){
+  var daftarButir = [];
+  state.arsipMusyawarah.forEach(function(p){
+    var list = p.putusanList || [];
+    var rangkuman = p.rangkumanId ? state.arsipRangkuman.find(function(e){ return e.id===p.rangkumanId; }) : null;
+    list.forEach(function(b){
+      if(!b.khususInstansi || b.instansiTerpilih.length===0) return;
+      daftarButir.push({
+        id: b.id, teks: b.teks, instansiTerpilih: b.instansiTerpilih.slice(),
+        periodeLabel: p.periodeLabel,
+        hijriYear: rangkuman ? rangkuman.hijriYear : null,
+        hijriMonth: rangkuman ? rangkuman.hijriMonth : null
+      });
+    });
+  });
+  if(daftarButir.length===0){ toast("Belum ada putusan yang ditandai Khusus Instansi Tertentu"); return; }
+  var pkg = { aplikasi: "rangkuman-pengingat-instansi", exportedAt: Date.now(), putusanList: daftarButir };
+  var blob = new Blob([JSON.stringify(pkg, null, 2)], {type:"application/json"});
+  var filename = "pengingat-instansi-"+todayISO()+".json";
+  if(window.AgendaFiles){ await window.AgendaFiles.saveOrShareBlob(filename, blob); }
+  toast(daftarButir.length+" putusan diekspor ke file pengingat");
+});
 
 var detailPutusanBackdrop = document.getElementById("detailPutusanBackdrop");
 var currentDetailPutusanId = null;
@@ -1761,22 +1968,24 @@ function openDetailPutusan(id){
   if(!p) return;
   currentDetailPutusanId = id;
   document.getElementById("detailPutusanSub").textContent = p.periodeLabel+(p.sumber==="kesekretariatan"?" · dari "+(p.shafAsal||"Kesekretariatan"):"")+" · dicatat "+new Date(p.createdAt).toLocaleDateString("id-ID",{day:"numeric",month:"long",year:"numeric"});
-  document.getElementById("detailPutusanIsi").value = p.keputusan;
+  var list = p.putusanList || (p.keputusan ? [{teks:p.keputusan, khususInstansi:false, instansiTerpilih:[]}] : []);
+  var html = "";
+  list.forEach(function(b, i){
+    var tagHtml = b.khususInstansi
+      ? '<div class="atags"><span class="tag putusan">Khusus: '+b.instansiTerpilih.map(escapeHtml).join(", ")+'</span></div>'
+      : '<div class="atags"><span class="tag">Umum — semua instansi</span></div>';
+    html += '<div class="putusan-butir-card"><div class="pb-top"><span class="pb-num">Putusan '+(i+1)+'</span></div>'+
+      '<p style="font-size:13px;line-height:1.6;margin:0 0 8px;">'+escapeHtml(b.teks).replace(/\n/g,"<br>")+'</p>'+tagHtml+'</div>';
+  });
+  if(p.arahan){
+    html += '<div class="section-title" style="margin-top:16px;">Arahan (dari Kesekretariatan)</div>'+
+      '<p style="font-size:13px;line-height:1.6;">'+escapeHtml(p.arahan).replace(/\n/g,"<br>")+'</p>';
+  }
+  document.getElementById("detailPutusanListWrap").innerHTML = html || '<p class="empty-note">Tidak ada isi.</p>';
   detailPutusanBackdrop.classList.add("open");
 }
 document.getElementById("btnDetailPutusanTutup").addEventListener("click", function(){ detailPutusanBackdrop.classList.remove("open"); });
 detailPutusanBackdrop.addEventListener("click", function(e){ if(e.target===this) this.classList.remove("open"); });
-document.getElementById("btnDetailPutusanSimpan").addEventListener("click", function(){
-  var p = state.arsipMusyawarah.find(function(x){ return x.id===currentDetailPutusanId; });
-  if(!p) return;
-  var v = document.getElementById("detailPutusanIsi").value.trim();
-  if(!v){ toast("Isi tidak boleh kosong"); return; }
-  p.keputusan = v;
-  save();
-  detailPutusanBackdrop.classList.remove("open");
-  renderPutusanList();
-  toast("Perubahan disimpan");
-});
 document.getElementById("btnDetailPutusanHapus").addEventListener("click", async function(){
   var ok = await showConfirm("Putusan musyawarah ini akan dihapus permanen. Yakin?", "Hapus");
   if(!ok) return;
@@ -1821,6 +2030,43 @@ document.getElementById("setHijriOffset").addEventListener("change", function(){
   save();
   renderTodayDateWidget();
   toast("Koreksi tanggal Hijriah disimpan");
+});
+
+// ================= Daftar Instansi yang Dikoordinir =================
+function renderDaftarInstansi(){
+  var wrap = document.getElementById("daftarInstansiListWrap");
+  if(!wrap) return;
+  wrap.innerHTML = "";
+  if(state.settings.daftarInstansi.length===0){
+    wrap.innerHTML = '<p class="empty-note" style="padding:6px 0;">Belum ada instansi terdaftar. Otomatis nambah begitu ada laporan masuk, atau tambah manual di bawah.</p>';
+    return;
+  }
+  state.settings.daftarInstansi.forEach(function(nama, idx){
+    var row = document.createElement("div");
+    row.className = "instansi-daftar-row";
+    row.innerHTML = '<span class="idnama">'+escapeHtml(nama)+'</span><button class="del-btn" data-idx="'+idx+'">✕</button>';
+    wrap.appendChild(row);
+  });
+  wrap.querySelectorAll(".del-btn").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var idx = parseInt(btn.dataset.idx,10);
+      state.settings.daftarInstansi.splice(idx,1);
+      save();
+      renderDaftarInstansi();
+      renderPutusanButirList();
+    });
+  });
+}
+document.getElementById("btnTambahInstansi").addEventListener("click", function(){
+  var inp = document.getElementById("inputTambahInstansi");
+  var nama = inp.value.trim();
+  if(!nama){ toast("Isi nama instansi dulu"); return; }
+  if(state.settings.daftarInstansi.indexOf(nama)>-1){ toast("Instansi ini udah ada di daftar"); return; }
+  state.settings.daftarInstansi.push(nama);
+  save();
+  inp.value = "";
+  renderDaftarInstansi();
+  renderPutusanButirList();
 });
 
 function doExportAllBackup(){
